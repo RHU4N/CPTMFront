@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CPTM Front">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#be1e2d"/>
+      <stop offset="1" stop-color="#74151f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0d1117"/>
+  <circle cx="256" cy="184" r="118" fill="url(#g)"/>
+  <path d="M150 262h212l-22 112H172z" fill="#f6f7f8"/>
+  <rect x="182" y="160" width="148" height="58" rx="18" fill="#f6f7f8"/>
+  <path d="M184 126h144l-22-34H206z" fill="#f6f7f8"/>
+  <circle cx="210" cy="332" r="22" fill="#0d1117"/>
+  <circle cx="302" cy="332" r="22" fill="#0d1117"/>
+  <path d="M176 298h160" stroke="#be1e2d" stroke-width="10" stroke-linecap="round"/>
+  <text x="256" y="412" font-family="Arial, Helvetica, sans-serif" font-size="54" text-anchor="middle" fill="#f6f7f8" font-weight="700">CPTM</text>
+</svg>
