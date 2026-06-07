@@ -2,7 +2,7 @@
   <section class="wizard-step card">
     <div class="wizard-step-head">
       <div>
-        <span class="eyebrow">Step 8</span>
+        <span class="eyebrow">Passo 7 de 8</span>
         <h3 class="section-title">Registro Fotográfico</h3>
         <p class="section-subtitle">Até 4 fotos, com preview, câmera mobile, upload desktop e ordenação operacional.</p>
       </div>

@@ -241,80 +241,96 @@ img {
   margin: 0;
 }
 
-.wizard-progress-shell {
-  display: grid;
-  gap: 10px;
+/* ── Wizard stepper ──────────────────────────────────────────────────── */
+.wizard-stepper-shell {
+  overflow-x: auto;
+  padding: 4px 2px 2px;
+  scrollbar-width: none;
+}
+.wizard-stepper-shell::-webkit-scrollbar { display: none; }
+
+.wizard-stepper {
+  display: flex;
+  align-items: flex-start;
+  min-width: max-content;
 }
 
-.wizard-progress {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.wizard-step-pill {
-  display: grid;
+.wizard-stepper-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 6px;
-  align-items: start;
-  justify-items: start;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  min-width: 58px;
+  flex-shrink: 0;
 }
 
-.wizard-step-pill.is-active {
-  color: var(--text);
-  border-color: rgba(234, 25, 31, 0.32);
-  box-shadow: 0 10px 24px rgba(234, 25, 31, 0.12);
-}
-
-.wizard-step-pill.is-complete {
-  color: #1b5634;
-  border-color: rgba(27, 143, 74, 0.32);
-}
-
-.wizard-step-number {
-  display: inline-flex;
-  width: 28px;
-  height: 28px;
+.wizard-stepper-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: rgba(18, 30, 52, 0.08);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.wizard-step-pill.is-active .wizard-step-number {
-  background: rgba(234, 25, 31, 0.14);
-}
-
-.wizard-step-pill.is-complete .wizard-step-number {
-  background: rgba(27, 143, 74, 0.12);
-}
-
-.wizard-step-pill-text {
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--muted);
+  transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.wizard-stepper-node:hover .wizard-stepper-circle {
+  border-color: rgba(234, 25, 31, 0.35);
+  color: var(--text);
+}
+
+.wizard-stepper-node.is-active .wizard-stepper-circle {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(234, 25, 31, 0.32);
+}
+
+.wizard-stepper-node.is-complete .wizard-stepper-circle {
+  border-color: #1b8f4a;
+  background: rgba(27, 143, 74, 0.1);
+  color: #1b8f4a;
+}
+
+.wizard-stepper-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
   line-height: 1.2;
+  white-space: nowrap;
+  transition: color 0.2s;
 }
 
-.wizard-progress-bar {
-  height: 8px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(18, 30, 52, 0.08);
+.wizard-stepper-node.is-active .wizard-stepper-label {
+  color: var(--brand);
 }
 
-.wizard-progress-bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--brand), #ff6c4f);
-  transition: width 0.2s ease;
+.wizard-stepper-node.is-complete .wizard-stepper-label {
+  color: #1b8f4a;
+}
+
+.wizard-stepper-track {
+  flex: 1;
+  height: 2px;
+  min-width: 10px;
+  margin-top: 17px;
+  background: var(--border);
+  border-radius: 1px;
+  transition: background 0.3s ease;
+}
+
+.wizard-stepper-track.is-done {
+  background: #1b8f4a;
 }
 
 .wizard-step {
@@ -477,15 +493,16 @@ img {
 .modal-panel {
   width: min(1120px, 100%);
   max-height: calc(100svh - 36px);
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 28px;
+  scrollbar-width: none;
+}
+.modal-panel::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 1120px) {
-  .wizard-progress {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .helper-box--compact {
     grid-template-columns: 1fr;
   }
@@ -500,10 +517,6 @@ img {
   .wizard-footer,
   .location-panel-head {
     flex-direction: column;
-  }
-
-  .wizard-progress {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .wizard-footer-actions,

@@ -1,38 +1,92 @@
 export function createEmptyEfluente() {
   return {
+    // Chave primária
     pkCdMeioAmbienteCptm: '',
-    idDeptoCampoAmbiente: null,
-    idStatusDesvio: null,
-    idStatusRegistro: null,
-    idMunicipio: null,
-    idLinha: null,
-    idVia: null,
-    idTrecho: null,
-    idTipoEfluente: null,
+    // Elemento de monitoramento
     txNrElementoMonitoramento: '',
     txNmElementoMonitoramento: '',
+    // GEA - Seção 1: Premissas
+    txSiglaDeptomMeioAmbiente: '',
+    txStatusDoDesvioAmbiental: '',
+    txStatusDoRegistroNoBd: '',
+    // GEA - Localização
+    txMunicipio: '',
+    txLinhaCptm: '',
+    txViaCptm: '',
+    txTrechoESentidoCptm: '',
     txKmPoste: '',
-    txEndereco: '',
-    txCoordenadaX: null,
-    txCoordenadaY: null,
-    dtRegistro: new Date().toISOString(),
-    dtAtualizacao: null,
-    txNomeTecnicoResponsavel: '',
-    txEmailTecnicoResponsavel: '',
-    txTelefoneTecnicoResponsavel: '',
-    txEmpresaContratada: '',
-    txNumeroContrato: '',
-    txProcessoAmbiental: '',
+    txEstacaoCptm: '',
+    // Coordenadas WGS84
+    nrLatGrauDecimalWgs84: null,
+    nrLongGrauDecimalWgs84: null,
+    // Coordenadas SIRGAS2000
+    nrLatMetrosSirgas2000: null,
+    nrLongMetrosSirgas2000: null,
+    // GEA - Premissas contratuais
+    txNmLocalEscopoContratual: '',
+    // Formulário PGA
+    txTipoDeFormulario: '',
+    dtDataEmissaoFormulario: null,
+    nrNumeroDeFormulario: null,
+    txAutorPfDoFormulario: '',
+    txNaturezaDoPga: '',
+    txNomePjExecutora: '',
+    // Atividade - listada e não listada
+    txTipoAtividadeListada: '',
+    txTipoAtividadeNListada: '',
+    txTipoDraListado: '',
+    txTipoDraNListado: '',
+    txIdDra: '',
+    dtValidadeDra: null,
+    txAnaliseCptmAprovacao: '',
+    // Efluente - Caracterização
+    txTipoAtividadeCptm: '',
+    txNmLocalAtiv: '',
+    txNmLocalAtivComplemento: '',
     txOrigemEfluente: '',
-    txDestinacaoEfluente: '',
-    txVolumeEfluente: null,
-    txUnidadeVolume: 'L',
-    txCorEfluente: '',
-    txOdorEfluente: '',
-    txPh: null,
-    txTemperatura: null,
-    txObservacao: '',
-    txLinkMapa: '',
+    txFonteGeradora: '',
+    nrQuantidadeL: null,
+    txTipoDestinacao: '',
+    txTipoVeiculo: '',
+    txIdVeiculo: '',
+    txIdGuiaRemessa: '',
+    nrDistanciaDaViaM: null,
+    txOfereceRiscoSistemaCptm: '',
+    txProprietario: '',
+    txObsCadastramento: '',
+    // Data e hora do cadastro
+    dtDataDoCadastramento: null,
+    hrHorasDoCadastramento: '',
+    // Cadastrador (PF/PJ)
+    txAutorPjDoCadastro: '',
+    txAutorPfDoCadastro: '',
+    txNmResponsavelCadastro: '',
+    txRpResponsavelCadastro: '',
+    txDrtResponsavelCadastro: '',
+    // Empresa contratada
+    txNomePjDaContratada: '',
+    txNrContratoContratada: '',
+    // Área gestora CPTM
+    txNmAreaGestoraCptm: '',
+    txIdAreaGestoraCptm: '',
+    txSiglaAreaGestoraCptm: '',
+    // Representante e supervisora
+    txNomePfDaRepresentante: '',
+    txNomePjDaSupervisora: '',
+    txNrContratoSupervisora: '',
+    // Arquivos relacionados
+    txNmArquivoFdcRelacionado: '',
+    pkCdArquivoFdcRelacionado: '',
+    txNmArquivoRvtRelacionado: '',
+    pkCdElementoDeMonitorRvt: '',
+    txNmArquivoDacRelacionado: '',
+    pkCdElementoDeMonitorDac: '',
+    txNmArquivoCncRelacionado: '',
+    pkCdElementoDeMonitorCnc: '',
+    // Referências
+    pkCdCodigoNoUltimoRra: '',
+    pkCdCedoc: '',
+    // Fotos (nomes dos arquivos; o BLOB fica em RT_EFLUENTE)
     txNomeFoto01: '',
     txNomeFoto02: '',
     txNomeFoto03: '',
@@ -41,15 +95,20 @@ export function createEmptyEfluente() {
 }
 
 export function normalizeEfluente(item = {}) {
+  const base = createEmptyEfluente()
   return {
-    ...createEmptyEfluente(),
+    ...base,
     ...item,
-    txCoordenadaX: item.txCoordenadaX ?? null,
-    txCoordenadaY: item.txCoordenadaY ?? null,
-    txVolumeEfluente: item.txVolumeEfluente ?? null,
-    txPh: item.txPh ?? null,
-    txTemperatura: item.txTemperatura ?? null,
-    attachments: item.attachments ?? [],
+    nrLatGrauDecimalWgs84: item.nrLatGrauDecimalWgs84 ?? null,
+    nrLongGrauDecimalWgs84: item.nrLongGrauDecimalWgs84 ?? null,
+    nrLatMetrosSirgas2000: item.nrLatMetrosSirgas2000 ?? null,
+    nrLongMetrosSirgas2000: item.nrLongMetrosSirgas2000 ?? null,
+    nrQuantidadeL: item.nrQuantidadeL ?? null,
+    nrDistanciaDaViaM: item.nrDistanciaDaViaM ?? null,
+    nrNumeroDeFormulario: item.nrNumeroDeFormulario ?? null,
+    dtDataEmissaoFormulario: item.dtDataEmissaoFormulario ?? null,
+    dtValidadeDra: item.dtValidadeDra ?? null,
+    dtDataDoCadastramento: item.dtDataDoCadastramento ?? null,
   }
 }
 

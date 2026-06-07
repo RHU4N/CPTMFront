@@ -172,6 +172,10 @@ function closeForm() {
   showForm.value = false
 }
 
+watch(showForm, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
+
 function selectItem(id) {
   selectedId.value = id
   router.push({ name: 'efluente-detail', params: { id } })
@@ -221,6 +225,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  document.body.style.overflow = ''
   window.removeEventListener('online', refreshOnlineState)
   window.removeEventListener('offline', refreshOnlineState)
 })
