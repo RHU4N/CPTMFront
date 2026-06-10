@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { deleteEfluente, listAttachments, listEfluentes, saveEfluente, uploadAttachment } from '@/services/efluenteService'
+import { deleteEfluente, flushOfflineQueue, isNetworkFailure, listAttachments, listEfluentes, saveEfluente, uploadAttachment } from '@/services/efluenteService'
 import { createEmptyEfluente, normalizeEfluente } from '@/models/efluente'
+import { enqueue, queueSize, serializeFiles } from '@/services/offlineQueue'
 
 export const useEfluenteStore = defineStore('efluente', {
   state: () => ({
@@ -9,7 +10,9 @@ export const useEfluenteStore = defineStore('efluente', {
     selectedId: null,
     loading: false,
     saving: false,
+    syncing: false,
     error: '',
+    pendingCount: queueSize(),
   }),
   getters: {
     selectedItem: (state) => state.items.find((item) => String(item.pkCdMeioAmbienteCptm) === String(state.selectedId)) || null,
@@ -58,10 +61,30 @@ export const useEfluenteStore = defineStore('efluente', {
         await this.loadItems()
         return saved
       } catch (error) {
+        if (isNetworkFailure(error)) {
+          const serializedFiles = files.length ? await serializeFiles(files) : []
+          enqueue(payload, serializedFiles)
+          this.pendingCount = queueSize()
+          const queued = new Error('OFFLINE_QUEUED')
+          queued.code = 'OFFLINE_QUEUED'
+          throw queued
+        }
         this.error = error.message || 'Falha ao salvar efluente'
         throw error
       } finally {
         this.saving = false
+      }
+    },
+    async flushQueue() {
+      this.syncing = true
+      try {
+        const results = await flushOfflineQueue()
+        this.pendingCount = queueSize()
+        const synced = results.filter((r) => r.status === 'synced').length
+        if (synced > 0) await this.loadItems()
+        return results
+      } finally {
+        this.syncing = false
       }
     },
     async removeItem(id) {

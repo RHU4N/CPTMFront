@@ -10,7 +10,11 @@
       </template>
     </AppHeader>
 
-    <div v-if="offline" class="offline-banner">Você está offline. O app mostra o último cache local disponível.</div>
+    <div v-if="offline" class="offline-banner">
+      Você está offline. O app mostra o último cache local disponível.
+      <span v-if="efluenteStore.pendingCount > 0" class="offline-badge">{{ efluenteStore.pendingCount }} aguardando envio</span>
+    </div>
+    <div v-if="efluenteStore.syncing" class="sync-banner">Sincronizando registros pendentes...</div>
 
     <main class="screen-grid dashboard-grid">
       <section class="card filters-panel">
@@ -77,7 +81,6 @@
         :items="filteredItems"
         :loading="efluenteStore.loading"
         :selected-id="selectedId"
-        :filters="filters"
         @new="openCreate"
         @select="selectItem"
         @edit="openEdit"
@@ -123,6 +126,7 @@ const uiStore = useUiStore()
 
 const offline = ref(!navigator.onLine)
 const showForm = ref(false)
+const isCreating = ref(false)
 const selectedId = ref(null)
 const draft = reactive(createEmptyEfluente())
 
@@ -138,18 +142,25 @@ const headerTitle = computed(() => (authStore.isAdmin ? 'Bem-vindo, Admin' : 'Be
 
 const filteredItems = computed(() => {
   return efluenteStore.items.filter((item) => {
-    const matchesStatus = !filters.status || String(item.idStatusDesvio) === String(filters.status)
-    const matchesMunicipio = !filters.municipio || String(item.idMunicipio) === String(filters.municipio)
-    const matchesLinha = !filters.linha || String(item.idLinha) === String(filters.linha)
-    const registro = item.dtRegistro ? new Date(item.dtRegistro) : null
+    const matchesStatus = !filters.status || item.txStatusDoDesvioAmbiental === filters.status
+    const matchesMunicipio = !filters.municipio || item.txMunicipio === filters.municipio
+    const matchesLinha = !filters.linha || item.txLinhaCptm === filters.linha
+    const registro = item.dtDataDoCadastramento ? new Date(item.dtDataDoCadastramento) : null
     const matchesFrom = !filters.dateFrom || !registro || registro >= new Date(`${filters.dateFrom}T00:00:00`)
     const matchesTo = !filters.dateTo || !registro || registro <= new Date(`${filters.dateTo}T23:59:59`)
     return matchesStatus && matchesMunicipio && matchesLinha && matchesFrom && matchesTo
   })
 })
 
-function refreshOnlineState() {
+async function refreshOnlineState() {
   offline.value = !navigator.onLine
+  if (navigator.onLine && efluenteStore.pendingCount > 0) {
+    const results = await efluenteStore.flushQueue()
+    const synced = results.filter((r) => r.status === 'synced').length
+    const failed = results.filter((r) => r.status === 'failed').length
+    if (synced > 0) uiStore.pushToast(`${synced} registro(s) sincronizado(s) com sucesso.`, 'success')
+    if (failed > 0) uiStore.pushToast(`${failed} registro(s) não puderam ser sincronizados (erro no servidor).`, 'error')
+  }
 }
 
 async function reload() {
@@ -159,11 +170,13 @@ async function reload() {
 
 function openCreate() {
   Object.assign(draft, createEmptyEfluente())
+  isCreating.value = true
   showForm.value = true
 }
 
 function openEdit(item) {
   Object.assign(draft, normalizeEfluente(item))
+  isCreating.value = false
   showForm.value = true
   selectedId.value = item.pkCdMeioAmbienteCptm
 }
@@ -182,9 +195,10 @@ function selectItem(id) {
 }
 
 async function saveItem(payload, files) {
+  const enrichedPayload = { ...payload, _isNew: isCreating.value }
   try {
-    const saved = await efluenteStore.saveItem(payload, files)
-    const savedId = saved?.pkCdMeioAmbienteCptm || payload.pkCdMeioAmbienteCptm
+    const saved = await efluenteStore.saveItem(enrichedPayload, files)
+    const savedId = saved?.pkCdMeioAmbienteCptm || enrichedPayload.pkCdMeioAmbienteCptm
 
     if (savedId) {
       localStorage.removeItem(`cptm.front.efluente.wizard.${savedId}`)
@@ -195,7 +209,13 @@ async function saveItem(payload, files) {
     showForm.value = false
     selectedId.value = savedId
   } catch (error) {
-    uiStore.pushToast(error.message || 'Falha ao salvar.', 'error')
+    if (error.code === 'OFFLINE_QUEUED') {
+      localStorage.removeItem('cptm.front.efluente.wizard.new')
+      uiStore.pushToast('Sem conexão — registro salvo localmente e será enviado automaticamente ao voltar online.', 'info')
+      showForm.value = false
+    } else {
+      uiStore.pushToast(error.message || 'Falha ao salvar.', 'error')
+    }
   }
 }
 
@@ -242,6 +262,27 @@ watch(
 </script>
 
 <style scoped>
+.offline-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.sync-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #1565c0;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .dashboard-grid {
   display: grid;
   gap: 18px;

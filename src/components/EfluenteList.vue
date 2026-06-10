@@ -10,25 +10,25 @@
     </div>
 
     <div v-if="loading" class="loading-state">Carregando efluentes...</div>
-    <div v-else-if="!filteredItems.length" class="empty-state">Nenhum efluente encontrado com os filtros atuais.</div>
+    <div v-else-if="!items.length" class="empty-state">Nenhum efluente encontrado com os filtros atuais.</div>
 
     <div v-else class="list-items">
       <article
-        v-for="item in filteredItems"
+        v-for="item in items"
         :key="item.pkCdMeioAmbienteCptm"
         class="item-card"
         :class="{ selected: String(item.pkCdMeioAmbienteCptm) === String(selectedId) }"
       >
         <div class="item-info">
-          <div>
+          <div class="item-text">
             <h3>{{ item.pkCdMeioAmbienteCptm }}</h3>
-            <p class="muted">{{ item.txNmElementoMonitoramento || 'Sem nome' }}</p>
-            <span class="item-date">{{ formatDate(item.dtRegistro) }}</span>
-            <span class="item-desc">{{ item.txEndereco || 'Sem endereço informado' }}</span>
-            <span class="item-desc">Linha {{ item.idLinha }} · Município {{ item.idMunicipio }} · Via {{ item.idVia }}</span>
+            <p class="muted">{{ item.txNmElementoMonitoramento || item.txNrElementoMonitoramento || 'Sem elemento de monitoramento' }}</p>
+            <span class="item-date">{{ formatDate(item.dtDataDoCadastramento) }}</span>
+            <span class="item-desc">{{ locationLabel(item) }}</span>
+            <span v-if="item.txStatusDoDesvioAmbiental" class="item-desc">{{ item.txStatusDoDesvioAmbiental }}</span>
           </div>
 
-          <span v-if="item.idStatusDesvio !== undefined" class="status-chip">Status {{ item.idStatusDesvio }}</span>
+          <span v-if="item.txStatusDoDesvioAmbiental" class="status-chip">{{ item.txStatusDoDesvioAmbiental }}</span>
         </div>
 
         <div class="item-actions">
@@ -42,8 +42,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
 const props = defineProps({
   items: {
     type: Array,
@@ -57,37 +55,20 @@ const props = defineProps({
     type: [String, Number],
     default: null,
   },
-  filters: {
-    type: Object,
-    default: () => ({}),
-  },
 })
 
 defineEmits(['new', 'select', 'edit', 'remove'])
 
 function formatDate(value) {
-  if (!value) {
-    return 'Sem data'
-  }
-
+  if (!value) return 'Sem data'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('pt-BR')
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('pt-BR')
 }
 
-const filteredItems = computed(() => {
-  const { status, municipio, linha, dateFrom, dateTo } = props.filters || {}
-  return props.items.filter((item) => {
-    const matchesStatus = !status || String(item.idStatusDesvio) === String(status)
-    const matchesMunicipio = !municipio || String(item.idMunicipio) === String(municipio)
-    const matchesLinha = !linha || String(item.idLinha) === String(linha)
-
-    const registro = item.dtRegistro ? new Date(item.dtRegistro) : null
-    const matchesDateFrom = !dateFrom || !registro || registro >= new Date(`${dateFrom}T00:00:00`)
-    const matchesDateTo = !dateTo || !registro || registro <= new Date(`${dateTo}T23:59:59`)
-
-    return matchesStatus && matchesMunicipio && matchesLinha && matchesDateFrom && matchesDateTo
-  })
-})
+function locationLabel(item) {
+  const parts = [item.txMunicipio, item.txLinhaCptm, item.txKmPoste].filter(Boolean)
+  return parts.length ? parts.join(' · ') : 'Localização não informada'
+}
 </script>
 
 <style scoped>
@@ -113,9 +94,7 @@ const filteredItems = computed(() => {
   cursor: pointer;
 }
 
-.create-btn:hover {
-  opacity: 0.9;
-}
+.create-btn:hover { opacity: 0.9; }
 
 .list-items {
   display: grid;
@@ -138,40 +117,40 @@ const filteredItems = computed(() => {
   outline: 2px solid rgba(234, 25, 31, 0.28);
 }
 
-.item-info,
-.item-actions {
+.item-info {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  align-items: center;
-}
-
-.item-info h3,
-.item-info p,
-.item-date,
-.item-desc {
-  margin: 0;
-}
-
-.item-info {
-  flex: 1 1 320px;
   align-items: flex-start;
+  flex: 1 1 320px;
+}
+
+.item-text {
+  display: grid;
+  gap: 2px;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .item-info h3 {
   font-size: 1rem;
   font-weight: 700;
+  margin: 0;
 }
+
+.item-info p { margin: 0; }
 
 .item-date {
   color: #777;
-  display: block;
-  margin-top: 2px;
+  font-size: 0.82rem;
 }
 
 .item-desc {
-  display: block;
-  margin-top: 5px;
+  font-size: 0.82rem;
   color: #555;
 }
 
@@ -179,12 +158,14 @@ const filteredItems = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-radius: 8px;
-  background: #ea191f;
-  color: #fff;
-  font-size: 0.82rem;
+  background: rgba(234, 25, 31, 0.12);
+  color: #ea191f;
+  font-size: 0.78rem;
+  font-weight: 700;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .item-actions button {
@@ -196,13 +177,9 @@ const filteredItems = computed(() => {
   cursor: pointer;
 }
 
-.item-actions button:hover {
-  opacity: 0.9;
-}
+.item-actions button:hover { opacity: 0.9; }
 
-.item-actions button.btn-danger {
-  background: #444;
-}
+.item-actions button.btn-danger { background: #444; }
 
 @media (max-width: 720px) {
   .list-head,
@@ -211,12 +188,8 @@ const filteredItems = computed(() => {
     align-items: stretch;
   }
 
-  .item-info {
-    flex-direction: column;
-  }
+  .item-info { flex-direction: column; }
 
-  .item-actions button {
-    width: 100%;
-  }
+  .item-actions button { width: 100%; }
 }
 </style>

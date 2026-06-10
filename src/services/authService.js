@@ -9,6 +9,7 @@ function normalizeAuthResponse(data) {
     idUsuario: data?.idUsuario ?? null,
     nmUsuario: data?.nmUsuario ?? '',
     dsLogin: data?.dsLogin ?? '',
+    dsEmail: data?.dsEmail ?? '',
     idPerfil: data?.idPerfil ?? 0,
   }
 }

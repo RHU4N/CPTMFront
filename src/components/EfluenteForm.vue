@@ -69,6 +69,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import PremissasStep from '@/components/forms/steps/PremissasStep.vue'
 import CadastradorStep from '@/components/forms/steps/CadastradorStep.vue'
 import FormularioStep from '@/components/forms/steps/FormularioStep.vue'
@@ -79,6 +80,8 @@ import FotosStep from '@/components/forms/steps/FotosStep.vue'
 import ReviewStep from '@/components/forms/steps/ReviewStep.vue'
 import { createEmptyEfluente } from '@/models/efluente'
 import { loadDomainCatalog } from '@/services/domainService'
+
+const authStore = useAuthStore()
 
 const props = defineProps({
   modelValue: {
@@ -310,6 +313,7 @@ function syncPhotoNames(files) {
 
 function initializeForm(value = null) {
   autosaveReady.value = false
+  const isNew = !value?.pkCdMeioAmbienteCptm
   draftKey.value = `cptm.front.efluente.wizard.${value?.pkCdMeioAmbienteCptm || 'new'}`
   const stored = restoreDraft(draftKey.value)
 
@@ -322,6 +326,22 @@ function initializeForm(value = null) {
   } else {
     locationMode.value = 'manual'
     currentStepIndex.value = 0
+  }
+
+  // Pré-preenchimento automático apenas em novos registros
+  if (isNew) {
+    const now = new Date()
+    if (!form.dtDataDoCadastramento) {
+      form.dtDataDoCadastramento = now.toISOString().slice(0, 10)
+    }
+    if (!form.hrHorasDoCadastramento) {
+      form.hrHorasDoCadastramento = now.toTimeString().slice(0, 5)
+    }
+    const session = authStore.session
+    if (session?.nmUsuario) {
+      if (!form.txAutorPfDoCadastro) form.txAutorPfDoCadastro = session.nmUsuario
+      if (!form.txNmResponsavelCadastro) form.txNmResponsavelCadastro = session.nmUsuario
+    }
   }
 
   selectedFiles.value = []

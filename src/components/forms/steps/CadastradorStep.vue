@@ -8,6 +8,11 @@
       </div>
     </div>
 
+    <div v-if="sessionLabel" class="session-hint">
+      <span class="session-hint-icon">👤</span>
+      <span>Logado como: <strong>{{ sessionLabel }}</strong></span>
+    </div>
+
     <div class="wizard-grid wizard-grid--2">
       <label class="field-stack">
         <span class="field-label">PJ do cadastro</span>
@@ -40,10 +45,36 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
 defineProps({
   form: { type: Object, default: () => ({}) },
   domains: { type: Object, default: () => ({}) },
   errors: { type: Object, default: () => ({}) },
   loading: { type: Boolean, default: false },
 })
+
+const authStore = useAuthStore()
+const sessionLabel = computed(() => {
+  const s = authStore.session
+  if (!s) return ''
+  const parts = [s.nmUsuario, s.dsEmail].filter(Boolean)
+  return parts.join(' · ')
+})
 </script>
+
+<style scoped>
+.session-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(234, 25, 31, 0.07);
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.session-hint-icon { font-size: 1rem; }
+</style>

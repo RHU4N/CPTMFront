@@ -1,5 +1,6 @@
 import api from '@/api/api'
 import { normalizeUser } from '@/models/efluente'
+import { dequeueFirst, deserializeFiles, peekQueue } from './offlineQueue'
 
 const CACHE_KEY = 'cptm.front.efluentes.cache.v1'
 
@@ -85,14 +86,46 @@ export async function getEfluenteById(id) {
   return unwrapItem(response.data)
 }
 
-export async function saveEfluente(payload) {
-  const method = payload.pkCdMeioAmbienteCptm ? 'put' : 'post'
-  const url = payload.pkCdMeioAmbienteCptm
-    ? `/api/PT_EFLUENTE/${encodeURIComponent(payload.pkCdMeioAmbienteCptm)}`
-    : '/api/PT_EFLUENTE'
+export function isNetworkFailure(error) {
+  return !navigator.onLine || error?.code === 'ERR_NETWORK' || error?.message === 'Network Error'
+}
 
-  const response = await api[method](url, payload)
+export async function saveEfluente(payload) {
+  const isNew = '_isNew' in payload ? !!payload._isNew : !payload.pkCdMeioAmbienteCptm
+  const { _isNew, ...body } = payload
+  const method = isNew ? 'post' : 'put'
+  const url = isNew
+    ? '/api/PT_EFLUENTE'
+    : `/api/PT_EFLUENTE/${encodeURIComponent(body.pkCdMeioAmbienteCptm)}`
+
+  const response = await api[method](url, body)
   return response.data?.dados ?? response.data
+}
+
+export async function flushOfflineQueue() {
+  const results = []
+  let queue = peekQueue()
+  while (queue.length > 0) {
+    const item = queue[0]
+    try {
+      const saved = await saveEfluente(item.payload)
+      const itemId = saved?.pkCdMeioAmbienteCptm || item.payload.pkCdMeioAmbienteCptm
+      if (itemId && item.files?.length) {
+        const files = deserializeFiles(item.files)
+        for (const file of files) {
+          await uploadAttachment(itemId, file)
+        }
+      }
+      dequeueFirst()
+      results.push({ id: item.id, status: 'synced', data: saved })
+    } catch (error) {
+      if (isNetworkFailure(error)) break
+      dequeueFirst()
+      results.push({ id: item.id, status: 'failed', error: error.message })
+    }
+    queue = peekQueue()
+  }
+  return results
 }
 
 export async function deleteEfluente(id) {
