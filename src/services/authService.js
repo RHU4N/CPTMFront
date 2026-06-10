@@ -11,6 +11,7 @@ function normalizeAuthResponse(data) {
     dsLogin: data?.dsLogin ?? '',
     dsEmail: data?.dsEmail ?? '',
     idPerfil: data?.idPerfil ?? 0,
+    primeiroAcesso: Boolean(data?.primeiroAcesso),
   }
 }
 

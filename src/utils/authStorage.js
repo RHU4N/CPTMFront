@@ -20,12 +20,17 @@ function normalizeSession(session) {
   const payload = decodeJwtPayload(session.token)
   const expiresAtUtc = payload?.exp ? new Date(payload.exp * 1000).toISOString() : null
 
+  // primeiroAcesso pode vir do response body ou do claim JWT
+  const primeiroAcessoRaw = session.primeiroAcesso ?? payload?.primeiroAcesso
+  const primeiroAcesso = primeiroAcessoRaw === true || primeiroAcessoRaw === 'true'
+
   return {
     ...session,
     expiresAtUtc,
     idPerfil: Number(session.idPerfil ?? payload?.idPerfil ?? 0) || 0,
     nmUsuario: session.nmUsuario ?? payload?.name ?? '',
     dsLogin: session.dsLogin ?? payload?.dsLogin ?? '',
+    primeiroAcesso,
   }
 }
 

@@ -23,15 +23,9 @@
           @keyup.enter="submit"
         />
 
-        <div class="login-links">
-          <a href="#">Esqueci a senha</a>
-        </div>
-
         <button type="button" :disabled="loading" @click="submit">
           {{ loading ? 'Entrando...' : 'Entrar' }}
         </button>
-
-        <RouterLink class="login-link" :to="{ name: 'register' }">Primeiro acesso / registro</RouterLink>
       </div>
     </template>
   </div>
@@ -39,7 +33,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import LoadingScreen from '@/components/LoadingScreen.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -58,7 +52,8 @@ onMounted(() => {
   authStore.hydrate()
 
   if (authStore.isAuthenticated) {
-    router.replace({ name: 'dashboard' })
+    const dest = authStore.primeiroAcesso ? { name: 'trocar-senha' } : { name: 'dashboard' }
+    router.replace(dest)
     return
   }
 
@@ -79,7 +74,14 @@ async function submit() {
 
   loading.value = true
   try {
-    await authStore.login({ dsLogin: form.dsLogin.trim(), dsSenha: form.dsSenha })
+    const session = await authStore.login({ dsLogin: form.dsLogin.trim(), dsSenha: form.dsSenha })
+
+    // Primeiro acesso: obriga troca de senha antes de qualquer outra ação
+    if (session?.primeiroAcesso) {
+      await router.replace({ name: 'trocar-senha' })
+      return
+    }
+
     await router.replace(route.query.redirect ? String(route.query.redirect) : { name: 'dashboard' })
   } catch (error) {
     alert(error.message || 'Usuário ou senha incorretos')
@@ -121,24 +123,6 @@ async function submit() {
   font-size: 16px;
 }
 
-.login-links {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
-}
-
-.login-links a,
-.login-link {
-  font-size: 14px;
-  color: #ea191f;
-  text-decoration: none;
-}
-
-.login-links a:hover,
-.login-link:hover {
-  text-decoration: underline;
-}
-
 .login-box button {
   padding: 12px;
   border: none;
@@ -167,11 +151,6 @@ async function submit() {
   .login-box button {
     padding: 14px;
     font-size: 18px;
-  }
-
-  .login-links a,
-  .login-link {
-    font-size: 16px;
   }
 }
 </style>

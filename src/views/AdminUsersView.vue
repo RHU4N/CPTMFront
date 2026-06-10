@@ -1,17 +1,18 @@
 <template>
   <div class="page-shell">
-    <AppHeader :title="'Gerenciamento de Usuários'" @home="router.push({ name: 'dashboard' })" @logout="logout" />
+    <AppHeader title="Gerenciamento de Usuários" @home="router.push({ name: 'dashboard' })" @logout="logout" />
 
     <main class="screen-grid admin-grid">
       <section class="card">
         <div class="admin-copy">
-          <span class="eyebrow">Admin</span>
+          <span class="eyebrow">Administração</span>
           <h1 class="section-title">Usuários</h1>
-          <p class="section-subtitle">Consulta do endpoint /api/TB_USUARIO com filtros locais.</p>
+          <p class="section-subtitle">Gerencie os usuários do sistema. Apenas administradores têm acesso a esta área.</p>
         </div>
 
-        <div class="admin-head">
-          <button class="btn btn-primary" type="button" @click="loadUsers">Recarregar</button>
+        <div class="admin-toolbar">
+          <button class="btn btn-primary" @click="router.push({ name: 'usuario-create' })">+ Novo Usuário</button>
+          <button class="btn btn-secondary" @click="loadUsers">Atualizar</button>
         </div>
 
         <div class="filters-grid">
@@ -19,13 +20,12 @@
             <span class="field-label">Perfil</span>
             <select v-model="filters.profile" class="select">
               <option value="">Todos</option>
-              <option value="1">Administrador</option>
-              <option value="2">Usuário de Campo</option>
+              <option v-for="p in perfis" :key="p.idPerfil" :value="String(p.idPerfil)">{{ p.dsPerfil }}</option>
             </select>
           </label>
 
           <label>
-            <span class="field-label">Ativo</span>
+            <span class="field-label">Status</span>
             <select v-model="filters.active" class="select">
               <option value="">Todos</option>
               <option value="true">Ativo</option>
@@ -40,22 +40,80 @@
         </div>
 
         <div v-if="loading" class="loading-state">Carregando usuários...</div>
-        <div v-else-if="!filteredUsers.length" class="empty-state">Nenhum usuário corresponde aos filtros.</div>
 
-        <div v-else class="users-list">
-          <article v-for="user in filteredUsers" :key="user.idUsuario" class="user-card">
-            <div>
-              <strong>{{ user.nmUsuario }}</strong>
-              <span>{{ user.dsLogin }}</span>
-              <span>{{ user.dsEmail || 'Sem e-mail informado' }}</span>
-            </div>
-
-            <div class="user-meta">
-              <span>{{ user.idPerfil === 1 ? 'Administrador' : 'Usuário de Campo' }}</span>
-              <span :class="user.flAtivo ? 'ok' : 'danger'">{{ user.flAtivo ? 'Ativo' : 'Inativo' }}</span>
-            </div>
-          </article>
+        <div v-else-if="!filteredUsers.length" class="empty-state">
+          Nenhum usuário corresponde aos filtros.
         </div>
+
+        <div v-else class="table-wrap">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Login</th>
+                <th>E-mail</th>
+                <th>Perfil</th>
+                <th>Status</th>
+                <th>Cadastro</th>
+                <th>Últ. Troca Senha</th>
+                <th class="col-actions">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in filteredUsers" :key="user.idUsuario">
+                <td>
+                  <span class="user-name">{{ user.nmUsuario }}</span>
+                  <span v-if="user.flPrimeiroAcesso" class="badge-first">1º acesso</span>
+                </td>
+                <td>{{ user.dsLogin }}</td>
+                <td>{{ user.dsEmail || '—' }}</td>
+                <td>{{ user.dsPerfil || perfilLabel(user.idPerfil) }}</td>
+                <td>
+                  <span :class="['status-pill', user.flAtivo ? 'pill-ok' : 'pill-danger']">
+                    {{ user.flAtivo ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </td>
+                <td>{{ formatDate(user.dtCadastro) }}</td>
+                <td>{{ user.dtUltimaTrocaSenha ? formatDate(user.dtUltimaTrocaSenha) : 'Nunca' }}</td>
+                <td class="col-actions">
+                  <div class="actions-wrap">
+                    <button
+                      class="action-btn action-view"
+                      title="Visualizar"
+                      @click="router.push({ name: 'usuario-details', params: { id: user.idUsuario } })"
+                    >Ver</button>
+
+                    <button
+                      class="action-btn action-edit"
+                      title="Editar"
+                      @click="router.push({ name: 'usuario-edit', params: { id: user.idUsuario } })"
+                    >Editar</button>
+
+                    <button
+                      v-if="user.flAtivo"
+                      class="action-btn action-deactivate"
+                      title="Desativar"
+                      :disabled="actionLoading === user.idUsuario"
+                      @click="desativar(user)"
+                    >Desativar</button>
+
+                    <button
+                      v-else
+                      class="action-btn action-activate"
+                      title="Reativar"
+                      :disabled="actionLoading === user.idUsuario"
+                      @click="reativar(user)"
+                    >Reativar</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="total-label" v-if="!loading && filteredUsers.length">
+          Exibindo {{ filteredUsers.length }} de {{ users.length }} usuário(s)
+        </p>
       </section>
     </main>
 
@@ -68,25 +126,30 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import ToastStack from '@/components/ToastStack.vue'
-import { listUsers } from '@/services/efluenteService'
-import { normalizeUser } from '@/models/efluente'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { desativarUsuario, listPerfis, listUsuarios, reativarUsuario } from '@/services/usuarioService'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 const loading = ref(true)
+const actionLoading = ref(null)
 const users = ref([])
+const perfis = ref([])
 const filters = reactive({ profile: '', active: '', search: '' })
 
 const filteredUsers = computed(() => {
   const search = filters.search.trim().toLowerCase()
   return users.value.filter((user) => {
-    const matchesProfile = !filters.profile || String(user.idPerfil) === String(filters.profile)
+    const matchesProfile = !filters.profile || String(user.idPerfil) === filters.profile
     const matchesActive = filters.active === '' || String(user.flAtivo) === filters.active
-    const matchesSearch = !search || [user.nmUsuario, user.dsLogin, user.dsEmail].some((value) => String(value || '').toLowerCase().includes(search))
+    const matchesSearch =
+      !search ||
+      [user.nmUsuario, user.dsLogin, user.dsEmail].some((v) =>
+        String(v || '').toLowerCase().includes(search),
+      )
     return matchesProfile && matchesActive && matchesSearch
   })
 })
@@ -94,12 +157,57 @@ const filteredUsers = computed(() => {
 async function loadUsers() {
   loading.value = true
   try {
-    users.value = (await listUsers()).map(normalizeUser)
+    const [u, p] = await Promise.all([listUsuarios(), listPerfis()])
+    users.value = u
+    perfis.value = p
   } catch (error) {
     uiStore.pushToast(error.message || 'Falha ao carregar usuários.', 'error')
   } finally {
     loading.value = false
   }
+}
+
+async function desativar(user) {
+  actionLoading.value = user.idUsuario
+  try {
+    await desativarUsuario(user.idUsuario)
+    user.flAtivo = false
+    uiStore.pushToast(`Usuário "${user.dsLogin}" desativado.`, 'success')
+  } catch (error) {
+    uiStore.pushToast(error.message || 'Erro ao desativar.', 'error')
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+async function reativar(user) {
+  actionLoading.value = user.idUsuario
+  try {
+    await reativarUsuario(user.idUsuario)
+    user.flAtivo = true
+    uiStore.pushToast(`Usuário "${user.dsLogin}" reativado.`, 'success')
+  } catch (error) {
+    uiStore.pushToast(error.message || 'Erro ao reativar.', 'error')
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+function formatDate(raw) {
+  if (!raw) return '-'
+  try {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    }).format(new Date(raw))
+  } catch {
+    return raw
+  }
+}
+
+function perfilLabel(id) {
+  if (id === 1) return 'Administrador'
+  if (id === 2) return 'Usuário de Campo'
+  return `Perfil ${id}`
 }
 
 function logout() {
@@ -118,72 +226,159 @@ onMounted(loadUsers)
 
 .admin-copy {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 16px;
 }
 
-.admin-head,
-.filters-grid {
-  display: grid;
-  gap: 14px;
-}
-
-.filters-grid {
-  grid-template-columns: 1fr 1fr 1.5fr auto;
-}
-
-.users-list {
-  display: grid;
-  gap: 10px;
-}
-
-.user-card {
+.admin-toolbar {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px;
-  border-radius: 8px;
-  background: #fafafa;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.user-card strong,
-.user-card span {
-  display: block;
-}
-
-.user-card strong {
-  margin-bottom: 2px;
-}
-
-.user-card span {
-  color: var(--muted);
-}
-
-.user-meta {
+.filters-grid {
   display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.users-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.users-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.users-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.user-name {
+  display: block;
+  font-weight: 600;
+  color: #222;
+}
+
+.badge-first {
+  display: inline-block;
+  font-size: 0.7rem;
+  background: #fff3e0;
+  color: #e65100;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pill-ok {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.pill-danger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.col-actions {
+  width: 220px;
+}
+
+.actions-wrap {
+  display: flex;
   gap: 6px;
-  justify-items: end;
-  align-content: start;
+  flex-wrap: wrap;
 }
 
-.ok {
-  color: var(--ok);
+.action-btn {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-.danger {
-  color: var(--danger);
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-view {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.action-edit {
+  background: #f3e5f5;
+  color: #6a1b9a;
+}
+
+.action-deactivate {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.action-activate {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.action-btn:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.total-label {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: #888;
+  text-align: right;
 }
 
 @media (max-width: 980px) {
-  .filters-grid,
-  .user-card {
-    grid-template-columns: 1fr;
-    flex-direction: column;
+  .filters-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .user-meta {
-    justify-items: start;
+  .filters-grid label:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

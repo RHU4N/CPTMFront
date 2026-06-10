@@ -11,6 +11,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => Boolean(state.session?.token),
     isAdmin: (state) => Number(state.session?.idPerfil) === 1,
+    primeiroAcesso: (state) => Boolean(state.session?.primeiroAcesso),
     role: () => getCurrentRole(),
     userLabel: (state) => state.session?.nmUsuario || state.session?.dsLogin || 'Usuário',
   },
@@ -48,6 +49,12 @@ export const useAuthStore = defineStore('auth', {
     },
     replaceSession(session) {
       this.session = saveAuthSession(session)
+    },
+    clearPrimeiroAcesso() {
+      if (this.session) {
+        this.session = { ...this.session, primeiroAcesso: false }
+        saveAuthSession(this.session)
+      }
     },
   },
 })

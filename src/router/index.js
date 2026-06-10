@@ -16,6 +16,12 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/trocar-senha',
+    name: 'trocar-senha',
+    component: () => import('@/views/TrocaSenhaView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/app',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),
@@ -33,6 +39,24 @@ const routes = [
     component: () => import('@/views/AdminUsersView.vue'),
     meta: { requiresAuth: true, roles: [1] },
   },
+  {
+    path: '/admin/usuarios/novo',
+    name: 'usuario-create',
+    component: () => import('@/views/UsuarioCreateView.vue'),
+    meta: { requiresAuth: true, roles: [1] },
+  },
+  {
+    path: '/admin/usuarios/:id',
+    name: 'usuario-details',
+    component: () => import('@/views/UsuarioDetailsView.vue'),
+    meta: { requiresAuth: true, roles: [1] },
+  },
+  {
+    path: '/admin/usuarios/:id/editar',
+    name: 'usuario-edit',
+    component: () => import('@/views/UsuarioEditView.vue'),
+    meta: { requiresAuth: true, roles: [1] },
+  },
 ]
 
 const router = createRouter({
@@ -44,24 +68,30 @@ const router = createRouter({
 })
 
 function hasRequiredRole(session, roles = []) {
-  if (!roles.length) {
-    return true
-  }
-
+  if (!roles.length) return true
   return roles.includes(Number(session?.idPerfil ?? 0))
 }
 
 router.beforeEach((to) => {
   const session = readAuthSession()
 
+  // Redireciona usuarios ja autenticados para fora do login/register
   if (to.meta.public && session?.token && (to.name === 'login' || to.name === 'register')) {
     return { name: 'dashboard' }
   }
 
+  // Requer autenticacao
   if (to.meta.requiresAuth && !session?.token) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
+  // Usuario autenticado com primeiro acesso pendente:
+  // Redireciona para /trocar-senha exceto se já estiver lá
+  if (session?.token && session?.primeiroAcesso && to.name !== 'trocar-senha') {
+    return { name: 'trocar-senha' }
+  }
+
+  // Verifica permissao de perfil
   if (!hasRequiredRole(session, to.meta.roles)) {
     return { name: 'dashboard' }
   }
