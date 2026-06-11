@@ -2,9 +2,9 @@
   <section class="wizard-step card">
     <div class="wizard-step-head">
       <div>
-        <span class="eyebrow">Passo 2 de 7</span>
-        <h3 class="section-title">Cadastrador / Responsável Técnico</h3>
-        <p class="section-subtitle">Identificação do autor do cadastro, registro profissional e DRT.</p>
+        <span class="eyebrow">Passo 2 de 8</span>
+        <h3 class="section-title">Identificação do Cadastrador e Responsável Técnico</h3>
+        <p class="section-subtitle">Autor do cadastramento, responsável técnico, registro profissional e documento de responsabilidade.</p>
       </div>
     </div>
 
@@ -15,30 +15,35 @@
 
     <div class="wizard-grid wizard-grid--2">
       <label class="field-stack">
-        <span class="field-label">PJ do cadastro</span>
-        <input v-model="form.txAutorPjDoCadastro" class="input" type="text" placeholder="Empresa autora do cadastro" :disabled="loading" />
+        <span class="field-label">Autor(a) (PJ) do Cadastramento</span>
+        <small class="field-help">Responsável Pessoa Jurídica por realizar o cadastramento da informação.</small>
+        <input v-model="form.txAutorPjDoCadastro" class="input" type="text" placeholder="Ex.: Companhia Paulista de Trens Metropolitanos - CPTM" :disabled="loading" />
       </label>
 
       <label class="field-stack">
-        <span class="field-label">PF do cadastro</span>
-        <input v-model="form.txAutorPfDoCadastro" class="input" :class="{ 'is-invalid': errors.txAutorPfDoCadastro }" type="text" placeholder="Nome do profissional autor" :disabled="loading" />
+        <span class="field-label">Autor(a) (PF) do Cadastramento</span>
+        <small class="field-help">Inserir o nome completo da pessoa que realizou o cadastramento da informação.</small>
+        <input v-model="form.txAutorPfDoCadastro" class="input" :class="{ 'is-invalid': errors.txAutorPfDoCadastro }" type="text" placeholder="Ex.: Nome e Sobrenome" :disabled="loading" />
         <small v-if="errors.txAutorPfDoCadastro" class="field-error">{{ errors.txAutorPfDoCadastro }}</small>
       </label>
 
       <label class="field-stack">
-        <span class="field-label">Nome do responsável pelo cadastro</span>
-        <input v-model="form.txNmResponsavelCadastro" class="input" :class="{ 'is-invalid': errors.txNmResponsavelCadastro }" type="text" placeholder="Nome completo" :disabled="loading" />
+        <span class="field-label">Responsável Técnico - RT pelo Cadastramento</span>
+        <small class="field-help">Inserir o nome completo do(a) responsável técnico(a) pelo cadastramento/caracterização da informação.</small>
+        <input v-model="form.txNmResponsavelCadastro" class="input" :class="{ 'is-invalid': errors.txNmResponsavelCadastro }" type="text" placeholder="Ex.: Nome e Sobrenome do RT" :disabled="loading" />
         <small v-if="errors.txNmResponsavelCadastro" class="field-error">{{ errors.txNmResponsavelCadastro }}</small>
       </label>
 
       <label class="field-stack">
-        <span class="field-label">RP (Registro Profissional)</span>
-        <input v-model="form.txRpResponsavelCadastro" class="input" type="text" placeholder="Número do RP" :disabled="loading" />
+        <span class="field-label">Registro Profissional (do RT)</span>
+        <small class="field-help">Inserir o registro profissional do(a) responsável técnico(a) pelo cadastramento.</small>
+        <input v-model="form.txRpResponsavelCadastro" class="input" type="text" placeholder="Ex.: CREA - 123456" :disabled="loading" />
       </label>
 
-      <label class="field-stack">
-        <span class="field-label">DRT (Delegacia Regional do Trabalho)</span>
-        <input v-model="form.txDrtResponsavelCadastro" class="input" type="text" placeholder="Ex.: DRT-SP" :disabled="loading" />
+      <label class="field-stack field-stack--full">
+        <span class="field-label">Documento de Responsabilidade Técnica (do RT)</span>
+        <small class="field-help">Inserir o documento de responsabilidade técnica do(a) RT pela realização do trabalho. Ex.: Anotação de Responsabilidade Técnica - ART.</small>
+        <input v-model="form.txDrtResponsavelCadastro" class="input" type="text" placeholder="Ex.: ART nº 123456" :disabled="loading" />
       </label>
     </div>
   </section>

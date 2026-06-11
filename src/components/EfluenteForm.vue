@@ -328,6 +328,9 @@ function initializeForm(value = null) {
     currentStepIndex.value = 0
   }
 
+  // Tipo de formulário: campo automático conforme Excel (ID 18, Editável: Não)
+  form.txTipoDeFormulario = 'Formulário de Cadastramento - FDC (FDC-EEA.EF)'
+
   // Pré-preenchimento automático apenas em novos registros
   if (isNew) {
     const now = new Date()
