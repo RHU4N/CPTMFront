@@ -21,7 +21,13 @@
       </ul>
     </div>
 
-    <PhotoUploader v-model:files="filesProxy" :max-files="4" :disabled="loading" />
+    <PhotoUploader
+      v-model:files="filesProxy"
+      :descriptions="photoDescriptions"
+      :max-files="4"
+      :disabled="loading"
+      @update:descriptions="onDescriptions"
+    />
   </section>
 </template>
 
@@ -30,14 +36,9 @@ import { computed } from 'vue'
 import PhotoUploader from '@/components/PhotoUploader.vue'
 
 const props = defineProps({
-  files: {
-    type: Array,
-    default: () => [],
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
+  files: { type: Array, default: () => [] },
+  form: { type: Object, default: () => ({}) },
+  loading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:files'])
@@ -46,4 +47,14 @@ const filesProxy = computed({
   get: () => props.files,
   set: (value) => emit('update:files', value),
 })
+
+const SLOTS = ['txNomeFoto01', 'txNomeFoto02', 'txNomeFoto03', 'txNomeFoto04']
+
+const photoDescriptions = computed(() => SLOTS.map((slot) => props.form?.[slot] || ''))
+
+function onDescriptions(descriptions) {
+  SLOTS.forEach((slot, i) => {
+    if (props.form) props.form[slot] = descriptions[i] || ''
+  })
+}
 </script>

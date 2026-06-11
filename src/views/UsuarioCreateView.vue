@@ -1,6 +1,6 @@
 <template>
   <div class="page-shell">
-    <AppHeader title="Novo Usuário" @home="router.push({ name: 'dashboard' })" @logout="logout" />
+    <AppHeader title="Novo Usuário" @home="router.push({ name: 'dashboard' })" @logout="logout" @perfil="router.push({ name: 'meu-perfil' })" />
 
     <main class="screen-grid">
       <section class="card form-card">

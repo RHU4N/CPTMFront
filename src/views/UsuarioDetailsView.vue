@@ -1,6 +1,6 @@
 <template>
   <div class="page-shell">
-    <AppHeader title="Detalhes do Usuário" @home="router.push({ name: 'dashboard' })" @logout="logout" />
+    <AppHeader title="Detalhes do Usuário" @home="router.push({ name: 'dashboard' })" @logout="logout" @perfil="router.push({ name: 'meu-perfil' })" />
 
     <main class="screen-grid">
       <section class="card detail-card">
@@ -53,6 +53,9 @@
           <div class="detail-actions">
             <button class="btn btn-secondary" @click="router.push({ name: 'admin-users' })">Voltar</button>
             <button class="btn btn-primary" @click="router.push({ name: 'usuario-edit', params: { id: usuario.idUsuario } })">Editar</button>
+            <button class="btn btn-warn" :disabled="actionLoading" @click="confirmarReset">
+              {{ actionLoading ? 'Aguarde...' : 'Redefinir Senha' }}
+            </button>
             <button
               v-if="usuario.flAtivo"
               class="btn btn-danger"
@@ -69,6 +72,16 @@
             >
               {{ actionLoading ? 'Aguarde...' : 'Reativar' }}
             </button>
+          </div>
+
+          <!-- Modal senha temporária -->
+          <div v-if="senhaTemp" class="modal-overlay" @click.self="senhaTemp = null">
+            <div class="modal-box">
+              <h3 class="modal-title">Senha Redefinida</h3>
+              <p class="modal-desc">Anote a senha temporária abaixo e entregue ao usuário. Na próxima entrada ele será obrigado a trocá-la.</p>
+              <div class="senha-temp-box">{{ senhaTemp }}</div>
+              <button class="btn btn-primary" style="width:100%" @click="senhaTemp = null">Fechar</button>
+            </div>
           </div>
         </template>
 
@@ -87,7 +100,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import ToastStack from '@/components/ToastStack.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { desativarUsuario, getUsuario, reativarUsuario } from '@/services/usuarioService'
+import { desativarUsuario, getUsuario, reativarUsuario, redefinirSenha } from '@/services/usuarioService'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,6 +110,7 @@ const uiStore = useUiStore()
 const carregando = ref(true)
 const actionLoading = ref(false)
 const usuario = ref(null)
+const senhaTemp = ref(null)
 
 onMounted(async () => {
   try {
@@ -117,6 +131,21 @@ async function desativar() {
     uiStore.pushToast('Usuário desativado com sucesso.', 'success')
   } catch (error) {
     uiStore.pushToast(error.message || 'Erro ao desativar.', 'error')
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function confirmarReset() {
+  if (!confirm(`Redefinir a senha de "${usuario.value.nmUsuario}"? Uma senha temporária será gerada.`)) return
+  actionLoading.value = true
+  try {
+    const res = await redefinirSenha(usuario.value.idUsuario)
+    senhaTemp.value = res.senhaTemporaria
+    usuario.value = { ...usuario.value, flPrimeiroAcesso: true }
+    uiStore.pushToast('Senha redefinida. Anote a senha temporária.', 'success')
+  } catch (error) {
+    uiStore.pushToast(error.message || 'Erro ao redefinir senha.', 'error')
   } finally {
     actionLoading.value = false
   }
@@ -235,6 +264,74 @@ function logout() {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-warn {
+  background: #e65100;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-warn:hover:not(:disabled) {
+  background: #bf360c;
+}
+
+.btn-warn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 32px 28px;
+  max-width: 360px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #222;
+}
+
+.modal-desc {
+  margin: 0;
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.senha-temp-box {
+  background: #f5f5f5;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #222;
+  font-family: monospace;
 }
 
 .btn-danger {

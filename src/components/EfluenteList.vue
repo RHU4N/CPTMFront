@@ -182,14 +182,12 @@ function locationLabel(item) {
 .item-actions button.btn-danger { background: #444; }
 
 @media (max-width: 720px) {
-  .list-head,
-  .item-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .item-info { flex-direction: column; }
 
-  .item-actions button { width: 100%; }
+  .item-actions {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 </style>

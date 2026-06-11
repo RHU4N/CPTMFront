@@ -1,5 +1,5 @@
 <template>
-  <form class="card wizard-shell efluente-form" @submit.prevent="handlePrimaryAction">
+  <form ref="formEl" class="card wizard-shell efluente-form" @submit.prevent="handlePrimaryAction">
     <header class="wizard-header">
       <div class="wizard-header-copy">
         <span class="eyebrow">CPTM | Inspeção ambiental</span>
@@ -82,6 +82,14 @@ import { createEmptyEfluente } from '@/models/efluente'
 import { loadDomainCatalog } from '@/services/domainService'
 
 const authStore = useAuthStore()
+
+const formEl = ref(null)
+
+function scrollToTop() {
+  nextTick(() => {
+    formEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
 
 const props = defineProps({
   modelValue: {
@@ -302,13 +310,11 @@ function restoreDraft(key) {
 
 function syncPhotoNames(files) {
   const slots = ['txNomeFoto01', 'txNomeFoto02', 'txNomeFoto03', 'txNomeFoto04']
-  if (!files.length) {
-    if (!photosTouched.value) return
-    slots.forEach((slot) => { form[slot] = '' })
-    return
-  }
-  photosTouched.value = true
-  slots.forEach((slot, index) => { form[slot] = files[index]?.name || '' })
+  photosTouched.value = files.length > 0
+  // Clear slots beyond the current file count; keep user-typed descriptions for active slots
+  slots.forEach((slot, index) => {
+    if (index >= files.length) form[slot] = ''
+  })
 }
 
 function initializeForm(value = null) {
@@ -333,6 +339,9 @@ function initializeForm(value = null) {
 
   // Pré-preenchimento automático apenas em novos registros
   if (isNew) {
+    if (!form.pkCdMeioAmbienteCptm) {
+      form.pkCdMeioAmbienteCptm = crypto.randomUUID()
+    }
     const now = new Date()
     if (!form.dtDataDoCadastramento) {
       form.dtDataDoCadastramento = now.toISOString().slice(0, 10)
@@ -367,16 +376,23 @@ async function goToStep(index) {
     if (Object.keys(validateStep(currentStep.value.id)).length) return
   }
   currentStepIndex.value = index
+  scrollToTop()
 }
 
 async function nextStep() {
   validationRequested.value = true
   if (Object.keys(validateStep(currentStep.value.id)).length) return
-  if (!isLastStep.value) currentStepIndex.value += 1
+  if (!isLastStep.value) {
+    currentStepIndex.value += 1
+    scrollToTop()
+  }
 }
 
 function previousStep() {
-  if (currentStepIndex.value > 0) currentStepIndex.value -= 1
+  if (currentStepIndex.value > 0) {
+    currentStepIndex.value -= 1
+    scrollToTop()
+  }
 }
 
 function submitPayload() {

@@ -1,6 +1,6 @@
 <template>
   <div class="page-shell">
-    <AppHeader title="Gerenciamento de Usuários" @home="router.push({ name: 'dashboard' })" @logout="logout" />
+    <AppHeader title="Gerenciamento de Usuários" @home="router.push({ name: 'dashboard' })" @logout="logout" @perfil="router.push({ name: 'meu-perfil' })" />
 
     <main class="screen-grid admin-grid">
       <section class="card">
@@ -45,6 +45,7 @@
           Nenhum usuário corresponde aos filtros.
         </div>
 
+        <!-- Desktop: tabela completa -->
         <div v-else class="table-wrap">
           <table class="users-table">
             <thead>
@@ -77,38 +78,38 @@
                 <td>{{ user.dtUltimaTrocaSenha ? formatDate(user.dtUltimaTrocaSenha) : 'Nunca' }}</td>
                 <td class="col-actions">
                   <div class="actions-wrap">
-                    <button
-                      class="action-btn action-view"
-                      title="Visualizar"
-                      @click="router.push({ name: 'usuario-details', params: { id: user.idUsuario } })"
-                    >Ver</button>
-
-                    <button
-                      class="action-btn action-edit"
-                      title="Editar"
-                      @click="router.push({ name: 'usuario-edit', params: { id: user.idUsuario } })"
-                    >Editar</button>
-
-                    <button
-                      v-if="user.flAtivo"
-                      class="action-btn action-deactivate"
-                      title="Desativar"
-                      :disabled="actionLoading === user.idUsuario"
-                      @click="desativar(user)"
-                    >Desativar</button>
-
-                    <button
-                      v-else
-                      class="action-btn action-activate"
-                      title="Reativar"
-                      :disabled="actionLoading === user.idUsuario"
-                      @click="reativar(user)"
-                    >Reativar</button>
+                    <button class="action-btn action-view" @click="router.push({ name: 'usuario-details', params: { id: user.idUsuario } })">Ver</button>
+                    <button class="action-btn action-edit" @click="router.push({ name: 'usuario-edit', params: { id: user.idUsuario } })">Editar</button>
+                    <button v-if="user.flAtivo" class="action-btn action-deactivate" :disabled="actionLoading === user.idUsuario" @click="desativar(user)">Desativar</button>
+                    <button v-else class="action-btn action-activate" :disabled="actionLoading === user.idUsuario" @click="reativar(user)">Reativar</button>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile: cards por usuário (CSS oculta no desktop) -->
+        <div v-if="!loading && filteredUsers.length" class="user-cards">
+          <div v-for="user in filteredUsers" :key="user.idUsuario" class="user-card">
+            <div class="user-card-head">
+              <div class="user-card-info">
+                <span class="user-card-name">{{ user.nmUsuario }}</span>
+                <span v-if="user.flPrimeiroAcesso" class="badge-first">1º acesso</span>
+                <span class="user-card-sub">@{{ user.dsLogin }} · {{ user.dsPerfil || perfilLabel(user.idPerfil) }}</span>
+                <span v-if="user.dsEmail" class="user-card-email">{{ user.dsEmail }}</span>
+              </div>
+              <span :class="['status-pill', user.flAtivo ? 'pill-ok' : 'pill-danger']">
+                {{ user.flAtivo ? 'Ativo' : 'Inativo' }}
+              </span>
+            </div>
+            <div class="user-card-actions">
+              <button class="action-btn action-view" @click="router.push({ name: 'usuario-details', params: { id: user.idUsuario } })">Ver</button>
+              <button class="action-btn action-edit" @click="router.push({ name: 'usuario-edit', params: { id: user.idUsuario } })">Editar</button>
+              <button v-if="user.flAtivo" class="action-btn action-deactivate" :disabled="actionLoading === user.idUsuario" @click="desativar(user)">Desativar</button>
+              <button v-else class="action-btn action-activate" :disabled="actionLoading === user.idUsuario" @click="reativar(user)">Reativar</button>
+            </div>
+          </div>
         </div>
 
         <p class="total-label" v-if="!loading && filteredUsers.length">
@@ -249,6 +250,7 @@ onMounted(loadUsers)
 
 .users-table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -269,6 +271,7 @@ onMounted(loadUsers)
   padding: 11px 12px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .users-table tbody tr:hover {
@@ -279,6 +282,9 @@ onMounted(loadUsers)
   display: block;
   font-weight: 600;
   color: #222;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badge-first {
@@ -376,9 +382,68 @@ onMounted(loadUsers)
   }
 }
 
+/* Mobile cards — hidden on desktop */
+.user-cards {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .filters-grid {
     grid-template-columns: 1fr;
+  }
+
+  .table-wrap {
+    display: none;
+  }
+
+  .user-cards {
+    display: grid;
+    gap: 10px;
+  }
+
+  .user-card {
+    background: #fafafa;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .user-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .user-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .user-card-name {
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #222;
+  }
+
+  .user-card-sub {
+    font-size: 0.82rem;
+    color: #666;
+  }
+
+  .user-card-email {
+    font-size: 0.8rem;
+    color: #999;
+  }
+
+  .user-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 }
 </style>

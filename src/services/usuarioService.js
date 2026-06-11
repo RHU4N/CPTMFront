@@ -45,6 +45,16 @@ export async function trocarSenha(payload) {
   return unwrap(response)
 }
 
+export async function atualizarMeuPerfil(payload) {
+  const response = await api.patch('/api/TB_USUARIO/meu-perfil', payload)
+  return unwrap(response)
+}
+
+export async function redefinirSenha(id) {
+  const response = await api.patch(`/api/TB_USUARIO/${id}/redefinir-senha`)
+  return unwrap(response)
+}
+
 export async function listPerfis() {
   const response = await api.get('/api/TB_PERFIL_USUARIO')
   return unwrapCollection(response)

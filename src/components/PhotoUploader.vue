@@ -35,7 +35,14 @@
         <span class="preview-order">{{ index + 1 }}</span>
         <img :src="preview.src" :alt="preview.name" />
         <figcaption>
-          <span>{{ preview.name }}</span>
+          <input
+            class="input input--desc"
+            type="text"
+            :value="preview.description"
+            :placeholder="`Descrição foto ${index + 1}...`"
+            :disabled="disabled"
+            @input="updateDescription(index, $event.target.value)"
+          />
           <div class="preview-actions">
             <button class="btn btn-ghost" type="button" :disabled="index === 0" @click="moveFile(index, -1)">↑</button>
             <button class="btn btn-ghost" type="button" :disabled="index === previews.length - 1" @click="moveFile(index, 1)">↓</button>
@@ -74,6 +81,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  descriptions: {
+    type: Array,
+    default: () => [],
+  },
   maxFiles: {
     type: Number,
     default: 4,
@@ -84,7 +95,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:files'])
+const emit = defineEmits(['update:files', 'update:descriptions'])
 
 const previews = ref([])
 const inputRef = ref(null)
@@ -196,11 +207,21 @@ function revokeAll() {
 
 function rebuildPreviews(files) {
   revokeAll()
-  previews.value = (files || []).map((file) => ({
-    id: fingerprint(file),
-    src: URL.createObjectURL(file),
-    name: file.name,
-  }))
+  const prevDescMap = Object.fromEntries(previews.value.map((p) => [p.id, p.description || '']))
+  previews.value = (files || []).map((file, index) => {
+    const fp = fingerprint(file)
+    return {
+      id: fp,
+      src: URL.createObjectURL(file),
+      name: file.name,
+      description: prevDescMap[fp] ?? props.descriptions[index] ?? '',
+    }
+  })
+}
+
+function updateDescription(index, value) {
+  previews.value[index].description = value
+  emit('update:descriptions', previews.value.map((p) => p.description))
 }
 
 async function maybeCompressFile(file) {
@@ -400,6 +421,16 @@ onBeforeUnmount(() => {
   align-items: stretch;
   gap: 10px;
   padding: 10px;
+}
+
+.input--desc {
+  width: 100%;
+  font-size: 0.82rem;
+  padding: 5px 8px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
 }
 
 .preview-actions {

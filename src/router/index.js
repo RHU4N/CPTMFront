@@ -22,6 +22,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/meu-perfil',
+    name: 'meu-perfil',
+    component: () => import('@/views/MeuPerfilView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/app',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),

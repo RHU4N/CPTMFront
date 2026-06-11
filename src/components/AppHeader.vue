@@ -8,6 +8,12 @@
 
     <div class="header-actions">
       <slot name="actions" />
+      <button class="logout-btn" title="Meu Perfil" type="button" @click="$emit('perfil')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      </button>
       <button class="logout-btn" title="Sair" type="button" @click="$emit('logout')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -37,7 +43,7 @@ defineProps({
   },
 })
 
-defineEmits(['home', 'logout', 'admin'])
+defineEmits(['home', 'logout', 'admin', 'perfil'])
 </script>
 
 <style scoped>
@@ -105,17 +111,33 @@ defineEmits(['home', 'logout', 'admin'])
 
 @media (max-width: 720px) {
   .app-header {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 10px 14px;
+    gap: 6px;
+  }
+
+  .brand-mark {
+    height: 36px;
   }
 
   .header-title {
     position: static;
     transform: none;
+    flex: 1;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    padding: 0 4px;
   }
 
   .header-actions {
-    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .logout-btn {
+    padding: 8px;
   }
 }
 </style>

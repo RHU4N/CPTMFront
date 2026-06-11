@@ -1,6 +1,6 @@
 <template>
   <div class="page-shell">
-    <AppHeader :title="item?.pkCdMeioAmbienteCptm || 'Detalhe do efluente'" @home="router.push({ name: 'dashboard' })" @logout="logout" />
+    <AppHeader :title="item?.pkCdMeioAmbienteCptm || 'Detalhe do efluente'" @home="router.push({ name: 'dashboard' })" @logout="logout" @perfil="router.push({ name: 'meu-perfil' })" />
 
     <main class="screen-grid detail-grid">
       <section v-if="loading" class="loading-state">Carregando detalhe do efluente...</section>
@@ -310,7 +310,7 @@ onMounted(load)
 
 .detail-sections {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
   gap: 14px;
 }
 

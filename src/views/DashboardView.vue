@@ -4,6 +4,7 @@
       :title="headerTitle"
       @home="router.push({ name: 'dashboard' })"
       @logout="logout"
+      @perfil="router.push({ name: 'meu-perfil' })"
     >
       <template #actions>
         <button class="header-action" type="button" @click="reload">Atualizar</button>
@@ -169,6 +170,21 @@ async function reload() {
 }
 
 function openCreate() {
+  // If the "new" draft holds an ID that already exists in the list, the previous
+  // save succeeded but cleanup didn't run (e.g. upload error). Clear stale draft.
+  try {
+    const raw = localStorage.getItem('cptm.front.efluente.wizard.new')
+    if (raw) {
+      const stored = JSON.parse(raw)
+      const storedId = stored?.form?.pkCdMeioAmbienteCptm
+      if (storedId && efluenteStore.items.some(
+        (item) => String(item.pkCdMeioAmbienteCptm) === String(storedId)
+      )) {
+        localStorage.removeItem('cptm.front.efluente.wizard.new')
+      }
+    }
+  } catch {}
+
   Object.assign(draft, createEmptyEfluente())
   isCreating.value = true
   showForm.value = true
@@ -203,11 +219,11 @@ async function saveItem(payload, files) {
     if (savedId) {
       localStorage.removeItem(`cptm.front.efluente.wizard.${savedId}`)
     }
-
     localStorage.removeItem('cptm.front.efluente.wizard.new')
-    uiStore.pushToast('Efluente salvo e sincronizado.', 'success')
-    showForm.value = false
+
+    uiStore.pushToast('Efluente salvo com sucesso.', 'success')
     selectedId.value = savedId
+    showForm.value = false
   } catch (error) {
     if (error.code === 'OFFLINE_QUEUED') {
       localStorage.removeItem('cptm.front.efluente.wizard.new')

@@ -54,7 +54,11 @@ export const useEfluenteStore = defineStore('efluente', {
 
         if (itemId && files.length) {
           for (const file of files) {
-            await uploadAttachment(itemId, file)
+            try {
+              await uploadAttachment(itemId, file)
+            } catch (uploadErr) {
+              console.warn('[efluente] upload de anexo falhou (registro salvo):', uploadErr?.message)
+            }
           }
         }
 
