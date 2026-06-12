@@ -1,49 +1,59 @@
-const QUEUE_KEY = 'cptm.front.offline.queue.v1'
+import { encrypt, decrypt } from '@/utils/cryptoService'
+import { dbGet, dbSet, STORE_QUEUE } from '@/utils/storageService'
 
-function readQueue() {
+const QUEUE_ID = 'queue'
+
+// In-memory cache (populated on boot via initQueue)
+let _queueCache = []
+
+// Called on boot — loads queue from IndexedDB into in-memory cache
+export async function initQueue() {
+  const record = await dbGet(STORE_QUEUE, QUEUE_ID)
+  if (!record) { _queueCache = []; return }
   try {
-    return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
+    const decrypted = await decrypt(record.payload)
+    _queueCache = decrypted ? JSON.parse(decrypted) : []
   } catch {
-    return []
+    _queueCache = []
   }
 }
 
-function writeQueue(queue) {
-  try {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue))
-  } catch { /* ignore storage failures */ }
+async function writeQueue(queue) {
+  _queueCache = queue
+  const encrypted = await encrypt(JSON.stringify(queue))
+  await dbSet(STORE_QUEUE, QUEUE_ID, encrypted)
 }
 
-export function enqueue(payload, files = []) {
-  const queue = readQueue()
+export async function enqueue(payload, files = []) {
+  const queue = [..._queueCache]
   queue.push({
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     payload,
     files, // serialized: [{ name, type, dataUrl }]
     queuedAt: new Date().toISOString(),
   })
-  writeQueue(queue)
+  await writeQueue(queue)
 }
 
-export function dequeueFirst() {
-  const queue = readQueue()
-  if (!queue.length) return null
-  const [first, ...rest] = queue
-  writeQueue(rest)
+export async function dequeueFirst() {
+  const [first, ...rest] = _queueCache
+  if (!first) return null
+  await writeQueue(rest)
   return first
 }
 
+// Synchronous — reads from in-memory cache
 export function queueSize() {
-  return readQueue().length
+  return _queueCache.length
 }
 
+// Synchronous — reads from in-memory cache
 export function peekQueue() {
-  return readQueue()
+  return [..._queueCache]
 }
 
-export function removeById(id) {
-  const queue = readQueue().filter((entry) => entry.id !== id)
-  writeQueue(queue)
+export async function removeById(id) {
+  await writeQueue(_queueCache.filter((entry) => entry.id !== id))
 }
 
 export function serializeFiles(files) {

@@ -21,8 +21,7 @@ import {
   TRECHO_OPTIONS,
   VIA_OPTIONS,
 } from '@/models/lookupData'
-
-const DOMAIN_CACHE_KEY = 'cptm.front.dominios.v3'
+import { dbGet, dbSet, STORE_CACHE_DOMINIOS } from '@/utils/storageService'
 
 function unwrapCollection(payload) {
   if (Array.isArray(payload)) return payload
@@ -62,18 +61,18 @@ function buildFallbackCatalog() {
   }
 }
 
-function readCache() {
+async function readCache() {
   try {
-    const raw = localStorage.getItem(DOMAIN_CACHE_KEY)
-    return raw ? JSON.parse(raw) : null
+    const record = await dbGet(STORE_CACHE_DOMINIOS, 'catalog')
+    return record ? JSON.parse(record.payload) : null
   } catch {
     return null
   }
 }
 
-function writeCache(value) {
+async function writeCache(value) {
   try {
-    localStorage.setItem(DOMAIN_CACHE_KEY, JSON.stringify(value))
+    await dbSet(STORE_CACHE_DOMINIOS, 'catalog', JSON.stringify(value))
   } catch {
     // Ignore cache write failures silently.
   }
@@ -150,9 +149,9 @@ export async function loadDomainCatalog() {
       tiposVeiculo: toOptions(unwrapCollection(tiposVeiculo.data)),
     }
 
-    writeCache(catalog)
+    await writeCache(catalog)
     return catalog
   } catch {
-    return readCache() || fallback
+    return await readCache() || fallback
   }
 }

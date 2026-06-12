@@ -39,7 +39,7 @@ api.interceptors.response.use(
       'Falha ao comunicar com a API.'
 
     if (status === 401) {
-      clearAuthSession()
+      clearAuthSession().catch(() => {})
       window.dispatchEvent(new CustomEvent('cptm:unauthorized'))
       if (typeof unauthorizedHandler === 'function') {
         unauthorizedHandler(error)

@@ -15,14 +15,10 @@ function normalizeAuthResponse(data) {
   }
 }
 
-function persistSessionIfAuthenticated(data) {
+async function persistSessionIfAuthenticated(data) {
   const session = normalizeAuthResponse(data)
-
-  if (!session.token) {
-    return session
-  }
-
-  return saveAuthSession(session)
+  if (!session.token) return session
+  return await saveAuthSession(session)
 }
 
 export async function login(payload) {
@@ -37,14 +33,11 @@ export async function register(payload) {
 
 export async function refreshToken() {
   const session = readAuthSession()
-  if (!session?.token) {
-    return null
-  }
-
+  if (!session?.token) return null
   const response = await api.post('/api/Auth/refresh')
   return persistSessionIfAuthenticated(response.data)
 }
 
-export function logout() {
-  clearAuthSession()
+export async function logout() {
+  await clearAuthSession()
 }

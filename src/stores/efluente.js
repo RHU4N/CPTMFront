@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { deleteEfluente, flushOfflineQueue, isNetworkFailure, listAttachments, listEfluentes, saveEfluente, uploadAttachment } from '@/services/efluenteService'
 import { createEmptyEfluente, normalizeEfluente } from '@/models/efluente'
 import { enqueue, peekQueue, queueSize, removeById, serializeFiles } from '@/services/offlineQueue'
-import { STATUS, listDrafts } from '@/services/draftService'
+import { STATUS, listDrafts, saveDraft } from '@/services/draftService'
 
 function markStatus(item, status) {
   return { ...item, _status: status }
@@ -117,7 +117,7 @@ export const useEfluenteStore = defineStore('efluente', {
       } catch (error) {
         if (isNetworkFailure(error)) {
           const serializedFiles = files.length ? await serializeFiles(files) : []
-          enqueue(payload, serializedFiles)
+          await enqueue(payload, serializedFiles)
           this.pendingCount = queueSize()
           const queued = new Error('OFFLINE_QUEUED')
           queued.code = 'OFFLINE_QUEUED'
@@ -152,19 +152,19 @@ export const useEfluenteStore = defineStore('efluente', {
           },
         )
         const failedResults = results.filter((r) => r.status === 'failed')
-        // Save failed items back to localStorage so they remain visible as ERRO drafts
+        // Save failed items back as drafts so they remain visible as ERRO
         for (const r of failedResults) {
           const pid = r.payload?.pkCdMeioAmbienteCptm
           if (pid) {
             try {
-              localStorage.setItem(`cptm.front.efluente.wizard.${pid}`, JSON.stringify({
+              await saveDraft(pid, {
                 form: r.payload,
                 files: r.files || [],
                 stepIndex: 7,
                 ready: true,
                 failed: true,
                 failError: r.error,
-              }))
+              })
             } catch { /* ignore */ }
           }
         }
@@ -182,15 +182,14 @@ export const useEfluenteStore = defineStore('efluente', {
         if (this.cancelRequested) {
           // Restaura os itens que ainda estão na fila de volta para rascunhos locais
           for (const entry of peekQueue()) {
-            const draftKey = `cptm.front.efluente.wizard.${entry.payload.pkCdMeioAmbienteCptm}`
             try {
-              localStorage.setItem(draftKey, JSON.stringify({
+              await saveDraft(entry.payload.pkCdMeioAmbienteCptm, {
                 form: entry.payload,
                 files: entry.files || [],
                 stepIndex: 7,
                 ready: true,
-              }))
-              removeById(entry.id)
+              })
+              await removeById(entry.id)
             } catch { /* ignore */ }
           }
           this.cancelRequested = false
@@ -213,23 +212,22 @@ export const useEfluenteStore = defineStore('efluente', {
         this.saving = false
       }
     },
-    removeQueued(queueId) {
-      removeById(queueId)
+    async removeQueued(queueId) {
+      await removeById(queueId)
       this.pendingCount = queueSize()
     },
-    restoreQueued(queueId) {
+    async restoreQueued(queueId) {
       const entry = peekQueue().find((e) => e.id === queueId)
       if (!entry) return
-      const draftKey = `cptm.front.efluente.wizard.${entry.payload.pkCdMeioAmbienteCptm}`
       try {
-        localStorage.setItem(draftKey, JSON.stringify({
+        await saveDraft(entry.payload.pkCdMeioAmbienteCptm, {
           form: entry.payload,
           files: entry.files || [],
           stepIndex: 7,
           ready: true,
-        }))
+        })
       } catch { /* ignore */ }
-      removeById(queueId)
+      await removeById(queueId)
       this.pendingCount = queueSize()
       this.refreshDrafts()
     },

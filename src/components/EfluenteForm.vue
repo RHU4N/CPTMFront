@@ -81,6 +81,7 @@ import ReviewStep from '@/components/forms/steps/ReviewStep.vue'
 import { createEmptyEfluente } from '@/models/efluente'
 import { loadDomainCatalog } from '@/services/domainService'
 import { serializeFiles, deserializeFiles } from '@/services/offlineQueue'
+import { saveDraft, getDraftById, removeDraft } from '@/services/draftService'
 
 const authStore = useAuthStore()
 
@@ -298,24 +299,20 @@ function applyPickedLocation({ latitude, longitude }) {
   form.nrLongGrauDecimalWgs84 = longitude
 }
 
-function persistDraft() {
+async function persistDraft() {
   if (!autosaveReady.value || !draftKey.value) return
+  const id = draftKey.value.replace('cptm.front.efluente.wizard.', '')
   try {
-    localStorage.setItem(
-      draftKey.value,
-      JSON.stringify({ form: sanitizePayload(), locationMode: locationMode.value, stepIndex: currentStepIndex.value, ready: currentStepIndex.value >= steps.length - 1, files: serializedFilesCache.value, savedAt: new Date().toISOString() }),
-    )
+    await saveDraft(id, {
+      form: sanitizePayload(),
+      locationMode: locationMode.value,
+      stepIndex: currentStepIndex.value,
+      ready: currentStepIndex.value >= steps.length - 1,
+      files: serializedFilesCache.value,
+      savedAt: new Date().toISOString(),
+    })
   } catch {
     // Ignore storage failures.
-  }
-}
-
-function restoreDraft(key) {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
   }
 }
 
@@ -328,21 +325,21 @@ function syncPhotoNames(files) {
   })
 }
 
-function initializeForm(value = null) {
+async function initializeForm(value = null) {
   autosaveReady.value = false
   const isNew = !value?.pkCdMeioAmbienteCptm
-  draftKey.value = `cptm.front.efluente.wizard.${value?.pkCdMeioAmbienteCptm || 'new'}`
-  let stored = restoreDraft(draftKey.value)
+  const draftId = value?.pkCdMeioAmbienteCptm || 'new'
+  draftKey.value = `cptm.front.efluente.wizard.${draftId}`
+  let stored = await getDraftById(draftId)
 
   // Migra rascunhos criados como "new" que ainda não foram renomeados para UUID.
   // Ocorre quando o usuário abre "Continuar" num rascunho novo: o formDraft tem UUID,
   // mas o draft foi gravado sob a chave 'new'. Encontra, migra e apaga a chave antiga.
   if (!stored && !isNew) {
-    const newKey = 'cptm.front.efluente.wizard.new'
-    const newStored = restoreDraft(newKey)
+    const newStored = await getDraftById('new')
     if (newStored?.form?.pkCdMeioAmbienteCptm === value.pkCdMeioAmbienteCptm) {
       stored = newStored
-      try { localStorage.removeItem(newKey) } catch { /* ignore */ }
+      await removeDraft('new')
     }
   }
 
@@ -450,7 +447,7 @@ function handlePrimaryAction() {
 
 watch(
   () => props.modelValue,
-  (value) => { initializeForm(value) },
+  async (value) => { await initializeForm(value) },
   { immediate: true, deep: true },
 )
 
@@ -463,14 +460,14 @@ watch(
     } catch {
       serializedFilesCache.value = []
     }
-    persistDraft()
+    await persistDraft()
   },
   { deep: true },
 )
 
 watch(
   [form, locationMode, currentStepIndex],
-  () => { persistDraft() },
+  async () => { await persistDraft() },
   { deep: true },
 )
 

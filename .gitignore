@@ -25,6 +25,10 @@ dist-ssr
 
 # Test scripts
 pwa_test.mjs
+cptm_verify*.js
+cptm_v*.js
+playwright-report/
+test-results/
 ss_*.png
 ss_*.jpg
 ss_*.jpeg

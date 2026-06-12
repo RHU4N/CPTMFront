@@ -161,7 +161,7 @@ import EfluenteMap from '@/components/EfluenteMap.vue'
 import StatusChip from '@/components/StatusChip.vue'
 import ToastStack from '@/components/ToastStack.vue'
 import { createEmptyEfluente, normalizeEfluente } from '@/models/efluente'
-import { removeDraft } from '@/services/draftService'
+import { clearNewDraft, getDraftById, removeDraft } from '@/services/draftService'
 import { deserializeFiles } from '@/services/offlineQueue'
 import { useAuthStore } from '@/stores/auth'
 import { useEfluenteStore } from '@/stores/efluente'
@@ -263,24 +263,23 @@ function discardQueued(draft) {
 
 async function sendDraft(draft) {
   if (!window.confirm('Enviar esta inspeção para o servidor?')) return
-  const key = draft._draftKey
-  if (!key) return
+  const draftId = draft._draftId || (draft._draftKey ? draft._draftKey.replace('cptm.front.efluente.wizard.', '') : null)
+  if (!draftId) return
   const cardId = draft.pkCdMeioAmbienteCptm || draft._draftKey
   sendingDraftId.value = cardId
   try {
-    const raw = localStorage.getItem(key)
-    if (!raw) { uiStore.pushToast('Rascunho não encontrado.', 'error'); return }
-    const data = JSON.parse(raw)
+    const data = await getDraftById(draftId)
+    if (!data) { uiStore.pushToast('Rascunho não encontrado.', 'error'); return }
     const formData = { ...data.form }
     const isNew = !efluenteStore.items.some((item) => String(item.pkCdMeioAmbienteCptm) === String(formData.pkCdMeioAmbienteCptm))
     const files = data.files?.length ? deserializeFiles(data.files) : []
     await efluenteStore.saveItem({ ...formData, _isNew: isNew }, files)
-    localStorage.removeItem(key)
+    await removeDraft(draftId)
     efluenteStore.refreshDrafts()
     uiStore.pushToast('Inspeção enviada com sucesso!', 'success')
   } catch (error) {
     if (error.code === 'OFFLINE_QUEUED') {
-      localStorage.removeItem(key)
+      await removeDraft(draftId)
       await nextTick()
       efluenteStore.refreshDrafts()
       uiStore.pushToast('Sem conexão — inspeção salva e enviada ao voltar online.', 'info')
@@ -292,14 +291,13 @@ async function sendDraft(draft) {
   }
 }
 
-function openCreate() {
+async function openCreate() {
   try {
-    const raw = localStorage.getItem('cptm.front.efluente.wizard.new')
-    if (raw) {
-      const stored = JSON.parse(raw)
+    const stored = await getDraftById('new')
+    if (stored) {
       const storedId = stored?.form?.pkCdMeioAmbienteCptm
       if (storedId && efluenteStore.items.some((item) => String(item.pkCdMeioAmbienteCptm) === String(storedId))) {
-        localStorage.removeItem('cptm.front.efluente.wizard.new')
+        await clearNewDraft()
       }
     }
   } catch {}
@@ -328,9 +326,9 @@ function openEditDraft(draft) {
   showForm.value = true
 }
 
-function discardDraft(draft) {
+async function discardDraft(draft) {
   if (!window.confirm('Descartar este rascunho?')) return
-  if (draft._draftKey) removeDraft(draft._draftKey)
+  if (draft._draftId || draft._draftKey) await removeDraft(draft._draftId || draft._draftKey)
   efluenteStore.refreshDrafts()
   uiStore.pushToast('Rascunho descartado.', 'info')
 }
@@ -354,8 +352,8 @@ async function saveItem(payload, files) {
   try {
     const saved = await efluenteStore.saveItem(enrichedPayload, files)
     const savedId = saved?.pkCdMeioAmbienteCptm || enrichedPayload.pkCdMeioAmbienteCptm
-    if (savedId) localStorage.removeItem(`cptm.front.efluente.wizard.${savedId}`)
-    localStorage.removeItem('cptm.front.efluente.wizard.new')
+    if (savedId) await removeDraft(savedId)
+    await clearNewDraft()
     uiStore.pushToast('Inspeção salva com sucesso.', 'success')
     selectedId.value = savedId
     showForm.value = false
@@ -363,8 +361,8 @@ async function saveItem(payload, files) {
   } catch (error) {
     if (error.code === 'OFFLINE_QUEUED') {
       const queuedId = enrichedPayload.pkCdMeioAmbienteCptm
-      if (queuedId) localStorage.removeItem(`cptm.front.efluente.wizard.${queuedId}`)
-      localStorage.removeItem('cptm.front.efluente.wizard.new')
+      if (queuedId) await removeDraft(queuedId)
+      await clearNewDraft()
       uiStore.pushToast('Sem conexão — registro salvo localmente e enviado ao voltar online.', 'info')
       showForm.value = false
       efluenteStore.refreshDrafts()
@@ -384,13 +382,13 @@ async function removeItem(item) {
   }
 }
 
-function logout() {
-  authStore.logout()
+async function logout() {
+  await authStore.logout()
   router.replace({ name: 'login' })
 }
 
 onMounted(async () => {
-  authStore.hydrate()
+  await authStore.hydrate()
   await efluenteStore.loadItems()
   window.addEventListener('online', refreshOnlineState)
   window.addEventListener('offline', refreshOnlineState)

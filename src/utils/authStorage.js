@@ -1,4 +1,8 @@
-const AUTH_SESSION_KEY = 'cptm.front.auth.session.v1'
+import { encrypt, decrypt } from './cryptoService'
+import { dbGet, dbSet, dbRemove, STORE_AUTH } from './storageService'
+
+const AUTH_ID = 'session'
+let _sessionCache = null
 
 function decodeJwtPayload(token) {
   try {
@@ -20,7 +24,6 @@ function normalizeSession(session) {
   const payload = decodeJwtPayload(session.token)
   const expiresAtUtc = payload?.exp ? new Date(payload.exp * 1000).toISOString() : null
 
-  // primeiroAcesso pode vir do response body ou do claim JWT
   const primeiroAcessoRaw = session.primeiroAcesso ?? payload?.primeiroAcesso
   const primeiroAcesso = primeiroAcessoRaw === true || primeiroAcessoRaw === 'true'
 
@@ -34,48 +37,58 @@ function normalizeSession(session) {
   }
 }
 
-export function readAuthSession() {
+// Called once at app boot (async) — populates in-memory cache from IndexedDB
+export async function hydrateAuth() {
   try {
-    const raw = localStorage.getItem(AUTH_SESSION_KEY)
-    if (!raw) {
-      return null
-    }
+    const record = await dbGet(STORE_AUTH, AUTH_ID)
+    if (!record) { _sessionCache = null; return null }
 
-    const session = normalizeSession(JSON.parse(raw))
-    if (!session?.token) {
-      return null
-    }
+    const decrypted = await decrypt(record.payload)
+    if (!decrypted) { _sessionCache = null; return null }
+
+    const session = normalizeSession(JSON.parse(decrypted))
+    if (!session?.token) { _sessionCache = null; return null }
 
     if (session.expiresAtUtc && Date.parse(session.expiresAtUtc) <= Date.now()) {
-      clearAuthSession()
+      await clearAuthSession()
       return null
     }
 
+    _sessionCache = session
     return session
   } catch {
+    _sessionCache = null
     return null
   }
 }
 
-export function saveAuthSession(session) {
+// Synchronous — reads from in-memory cache (populated by hydrateAuth)
+export function readAuthSession() {
+  return _sessionCache
+}
+
+export async function saveAuthSession(session) {
   const normalized = normalizeSession(session)
   if (!normalized) {
-    clearAuthSession()
+    await clearAuthSession()
     return null
   }
 
-  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(normalized))
+  _sessionCache = normalized
+  const encrypted = await encrypt(JSON.stringify(normalized))
+  await dbSet(STORE_AUTH, AUTH_ID, encrypted)
   return normalized
 }
 
-export function clearAuthSession() {
-  localStorage.removeItem(AUTH_SESSION_KEY)
+export async function clearAuthSession() {
+  _sessionCache = null
+  await dbRemove(STORE_AUTH, AUTH_ID)
 }
 
 export function getAccessToken() {
-  return readAuthSession()?.token || ''
+  return _sessionCache?.token || ''
 }
 
 export function getCurrentRole() {
-  return Number(readAuthSession()?.idPerfil ?? 0) === 1 ? 'admin' : 'operator'
+  return Number(_sessionCache?.idPerfil ?? 0) === 1 ? 'admin' : 'operator'
 }

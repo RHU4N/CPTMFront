@@ -2,20 +2,21 @@ import api from '@/api/api'
 import { normalizeUser } from '@/models/efluente'
 import { dequeueFirst, deserializeFiles, peekQueue } from './offlineQueue'
 import { registrarLogSync } from './adminService'
+import { dbGet, dbSet, STORE_CACHE_EFLUENTES } from '@/utils/storageService'
 
-const CACHE_KEY = 'cptm.front.efluentes.cache.v1'
-
-function readJson(key, fallback) {
+async function cachedList() {
   try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
+    const record = await dbGet(STORE_CACHE_EFLUENTES, 'list')
+    return record ? JSON.parse(record.payload) : []
   } catch {
-    return fallback
+    return []
   }
 }
 
-function writeJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
+async function setCachedList(items) {
+  try {
+    await dbSet(STORE_CACHE_EFLUENTES, 'list', JSON.stringify(items))
+  } catch { /* ignore cache write failures */ }
 }
 
 function unwrapCollection(payload) {
@@ -59,22 +60,14 @@ function normalizeList(items) {
   }))
 }
 
-function cachedList() {
-  return readJson(CACHE_KEY, [])
-}
-
-function setCachedList(items) {
-  writeJson(CACHE_KEY, items)
-}
-
 export async function listEfluentes() {
   try {
     const response = await api.get('/api/PT_EFLUENTE')
     const items = normalizeList(unwrapCollection(response.data))
-    setCachedList(items)
+    await setCachedList(items)
     return items
   } catch (error) {
-    const fallback = cachedList()
+    const fallback = await cachedList()
     if (fallback.length) {
       return fallback
     }
@@ -128,7 +121,7 @@ export async function flushOfflineQueue(cancelSignal = null, onItemStart = null,
           await uploadAttachment(itemId, file)
         }
       }
-      dequeueFirst()
+      await dequeueFirst()
       onItemSync?.(item)
       results.push({ id: item.id, status: 'synced', data: saved })
     } catch (error) {
@@ -136,7 +129,7 @@ export async function flushOfflineQueue(cancelSignal = null, onItemStart = null,
         await registrarLogSync('FALHA', `Falha de rede após ${results.filter((r) => r.status === 'synced').length} enviados.`)
         break
       }
-      dequeueFirst()
+      await dequeueFirst()
       results.push({
         id: item.payload?.pkCdMeioAmbienteCptm || item.id,
         queueId: item.id,

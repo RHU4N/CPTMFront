@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { login as loginRequest, logout as logoutRequest, refreshToken, register as registerRequest } from '@/services/authService'
-import { getCurrentRole, readAuthSession, saveAuthSession } from '@/utils/authStorage'
+import { getCurrentRole, hydrateAuth, readAuthSession, saveAuthSession } from '@/utils/authStorage'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -16,8 +16,8 @@ export const useAuthStore = defineStore('auth', {
     userLabel: (state) => state.session?.nmUsuario || state.session?.dsLogin || 'Usuário',
   },
   actions: {
-    hydrate() {
-      this.session = readAuthSession()
+    async hydrate() {
+      this.session = await hydrateAuth()
       this.hydrated = true
     },
     async login(payload) {
@@ -43,17 +43,17 @@ export const useAuthStore = defineStore('auth', {
         throw error
       }
     },
-    logout() {
-      logoutRequest()
+    async logout() {
+      await logoutRequest()
       this.session = null
     },
-    replaceSession(session) {
-      this.session = saveAuthSession(session)
+    async replaceSession(session) {
+      this.session = await saveAuthSession(session)
     },
-    clearPrimeiroAcesso() {
+    async clearPrimeiroAcesso() {
       if (this.session) {
         this.session = { ...this.session, primeiroAcesso: false }
-        saveAuthSession(this.session)
+        await saveAuthSession(this.session)
       }
     },
   },
