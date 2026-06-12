@@ -35,7 +35,7 @@ function unwrapItem(payload) {
 
 function normalizeAttachment(item = {}) {
   const contentType = item.contentType ?? ''
-  const dataBase64 = item.dataBase64 ?? ''
+  const dataBase64 = item.data ?? item.dataBase64 ?? ''
   const isImage = contentType.startsWith('image/')
 
   return {
@@ -102,11 +102,13 @@ export async function saveEfluente(payload) {
   return response.data?.dados ?? response.data
 }
 
-export async function flushOfflineQueue() {
+export async function flushOfflineQueue(cancelSignal = null, onItemStart = null, onItemSync = null) {
   const results = []
   let queue = peekQueue()
   while (queue.length > 0) {
+    if (cancelSignal?.cancelled) break
     const item = queue[0]
+    onItemStart?.(item.id)
     try {
       const saved = await saveEfluente(item.payload)
       const itemId = saved?.pkCdMeioAmbienteCptm || item.payload.pkCdMeioAmbienteCptm
@@ -117,6 +119,7 @@ export async function flushOfflineQueue() {
         }
       }
       dequeueFirst()
+      onItemSync?.(item)
       results.push({ id: item.id, status: 'synced', data: saved })
     } catch (error) {
       if (isNetworkFailure(error)) break

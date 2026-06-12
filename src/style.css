@@ -359,6 +359,26 @@ img {
   gap: 6px;
 }
 
+.field-stack--full {
+  grid-column: 1 / -1;
+}
+
+.wizard-fieldset {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  margin: 0;
+}
+
+.wizard-legend {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 6px;
+}
+
 .field-help {
   color: var(--muted);
   font-size: 0.8rem;

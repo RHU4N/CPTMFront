@@ -41,6 +41,11 @@ export function peekQueue() {
   return readQueue()
 }
 
+export function removeById(id) {
+  const queue = readQueue().filter((entry) => entry.id !== id)
+  writeQueue(queue)
+}
+
 export function serializeFiles(files) {
   return Promise.all(
     files.map(

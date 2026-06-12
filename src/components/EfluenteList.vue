@@ -2,72 +2,90 @@
   <section class="card efluente-list">
     <div class="list-head">
       <div>
-        <h2 class="section-title">Efluentes recentes</h2>
-        <p class="section-subtitle">Registros, filtros e atalhos para o mapa.</p>
+        <h2 class="section-title">{{ title }}</h2>
+        <p class="section-subtitle">{{ subtitle }}</p>
       </div>
-
-      <button class="create-btn" type="button" @click="$emit('new')">+ Novo registro</button>
+      <button class="create-btn" type="button" @click="$emit('new')">+ Nova inspeção</button>
     </div>
 
-    <div v-if="loading" class="loading-state">Carregando efluentes...</div>
-    <div v-else-if="!items.length" class="empty-state">Nenhum efluente encontrado com os filtros atuais.</div>
+    <div v-if="loading" class="loading-state">Carregando inspeções...</div>
+    <div v-else-if="!items.length" class="empty-state">Nenhuma inspeção encontrada.</div>
 
     <div v-else class="list-items">
       <article
-        v-for="item in items"
+        v-for="item in pageItems"
         :key="item.pkCdMeioAmbienteCptm"
         class="item-card"
         :class="{ selected: String(item.pkCdMeioAmbienteCptm) === String(selectedId) }"
       >
-        <div class="item-info">
+        <div class="item-main">
           <div class="item-text">
-            <h3>{{ item.pkCdMeioAmbienteCptm }}</h3>
-            <p class="muted">{{ item.txNmElementoMonitoramento || item.txNrElementoMonitoramento || 'Sem elemento de monitoramento' }}</p>
-            <span class="item-date">{{ formatDate(item.dtDataDoCadastramento) }}</span>
-            <span class="item-desc">{{ locationLabel(item) }}</span>
-            <span v-if="item.txStatusDoDesvioAmbiental" class="item-desc">{{ item.txStatusDoDesvioAmbiental }}</span>
-          </div>
+            <div class="item-title-row">
+              <h3 class="item-name">{{ item.txNmElementoMonitoramento || item.txNrElementoMonitoramento || 'Sem nome' }}</h3>
+              <StatusChip v-if="item._status" :status="item._status" />
+            </div>
 
-          <span v-if="item.txStatusDoDesvioAmbiental" class="status-chip">{{ item.txStatusDoDesvioAmbiental }}</span>
+            <div class="item-meta">
+              <span v-if="item.dtDataDoCadastramento" class="meta-item">{{ formatDate(item.dtDataDoCadastramento) }}{{ item.hrHorasDoCadastramento ? ' ' + item.hrHorasDoCadastramento : '' }}</span>
+              <span v-if="item.txViaCptm" class="meta-item">{{ item.txViaCptm }}</span>
+              <span v-if="item.txEstacaoCptm" class="meta-item">{{ item.txEstacaoCptm }}</span>
+              <span v-if="item.txMunicipio" class="meta-item">{{ item.txMunicipio }}</span>
+              <span v-if="item.txStatusDoDesvioAmbiental" class="meta-item status-text">{{ item.txStatusDoDesvioAmbiental }}</span>
+            </div>
+
+            <span v-if="isAdmin && item.txAutorPfDoCadastro" class="item-author">Por: {{ item.txAutorPfDoCadastro }}</span>
+          </div>
         </div>
 
         <div class="item-actions">
-          <button class="btn btn-ghost" type="button" @click="$emit('select', item.pkCdMeioAmbienteCptm)">Mapa</button>
-          <button class="btn btn-secondary" type="button" @click="$emit('edit', item)">Editar</button>
-          <button class="btn btn-danger" type="button" @click="$emit('remove', item)">Excluir</button>
+          <button class="btn btn-ghost" type="button" @click="$emit('select', item.pkCdMeioAmbienteCptm)">Visualizar</button>
+          <button v-if="isAdmin" class="btn btn-secondary" type="button" @click="$emit('edit', item)">Editar</button>
+          <button v-if="isAdmin" class="btn btn-danger" type="button" @click="$emit('remove', item)">Excluir</button>
         </div>
       </article>
+    </div>
+
+    <!-- Paginação -->
+    <div v-if="totalPages > 1" class="list-pagination">
+      <button class="page-btn" :disabled="page === 1" @click="page = 1">«</button>
+      <button class="page-btn" :disabled="page === 1" @click="page--">‹</button>
+      <span class="page-info">{{ page }} / {{ totalPages }}</span>
+      <button class="page-btn" :disabled="page === totalPages" @click="page++">›</button>
+      <button class="page-btn" :disabled="page === totalPages" @click="page = totalPages">»</button>
     </div>
   </section>
 </template>
 
 <script setup>
+import { computed, ref, watch } from 'vue'
+import StatusChip from '@/components/StatusChip.vue'
+
+const PAGE_SIZE = 10
+
 const props = defineProps({
-  items: {
-    type: Array,
-    default: () => [],
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  selectedId: {
-    type: [String, Number],
-    default: null,
-  },
+  items: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
+  selectedId: { type: [String, Number], default: null },
+  isAdmin: { type: Boolean, default: false },
+  title: { type: String, default: 'Inspeções recentes' },
+  subtitle: { type: String, default: 'Registros sincronizados com o servidor.' },
 })
 
 defineEmits(['new', 'select', 'edit', 'remove'])
 
-function formatDate(value) {
-  if (!value) return 'Sem data'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('pt-BR')
-}
+const page = ref(1)
 
-function locationLabel(item) {
-  const parts = [item.txMunicipio, item.txLinhaCptm, item.txKmPoste].filter(Boolean)
-  return parts.length ? parts.join(' · ') : 'Localização não informada'
+watch(() => props.items, () => { page.value = 1 })
+
+const totalPages = computed(() => Math.max(1, Math.ceil(props.items.length / PAGE_SIZE)))
+const pageItems = computed(() => {
+  const start = (page.value - 1) * PAGE_SIZE
+  return props.items.slice(start, start + PAGE_SIZE)
+})
+
+function formatDate(value) {
+  if (!value) return ''
+  try { return new Intl.DateTimeFormat('pt-BR').format(new Date(value)) } catch { return String(value) }
 }
 </script>
 
@@ -81,7 +99,8 @@ function locationLabel(item) {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  align-items: end;
+  align-items: flex-end;
+  flex-wrap: wrap;
 }
 
 .create-btn {
@@ -92,6 +111,8 @@ function locationLabel(item) {
   color: white;
   font-weight: bold;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .create-btn:hover { opacity: 0.9; }
@@ -103,91 +124,128 @@ function locationLabel(item) {
 
 .item-card {
   background: #fff;
-  border-radius: 8px;
-  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .item-card.selected {
-  outline: 2px solid rgba(234, 25, 31, 0.28);
+  border-color: rgba(234, 25, 31, 0.4);
+  box-shadow: 0 0 0 2px rgba(234, 25, 31, 0.12);
 }
 
-.item-info {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-  flex: 1 1 320px;
+.item-main {
+  flex: 1 1 220px;
+  min-width: 0;
 }
 
 .item-text {
   display: grid;
-  gap: 2px;
+  gap: 5px;
+}
+
+.item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meta-item {
+  font-size: 0.8rem;
+  color: #666;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.status-text {
+  color: #555;
+}
+
+.item-author {
+  font-size: 0.78rem;
+  color: #999;
+  font-style: italic;
 }
 
 .item-actions {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.item-info h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.item-info p { margin: 0; }
-
-.item-date {
-  color: #777;
-  font-size: 0.82rem;
-}
-
-.item-desc {
-  font-size: 0.82rem;
-  color: #555;
-}
-
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: rgba(234, 25, 31, 0.12);
-  color: #ea191f;
-  font-size: 0.78rem;
-  font-weight: 700;
-  white-space: nowrap;
   flex-shrink: 0;
 }
 
-.item-actions button {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 6px;
-  background: #ea191f;
-  color: white;
-  cursor: pointer;
+.item-actions .btn {
+  padding: 6px 12px;
+  font-size: 0.82rem;
 }
 
-.item-actions button:hover { opacity: 0.9; }
+.list-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
 
-.item-actions button.btn-danger { background: #444; }
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.88rem;
+  transition: background 0.15s;
+}
 
-@media (max-width: 720px) {
-  .item-info { flex-direction: column; }
+.page-btn:hover:not(:disabled) { background: #f5f5f5; }
+.page-btn:disabled { opacity: 0.4; cursor: default; }
+
+.page-info {
+  font-size: 0.85rem;
+  color: #555;
+  min-width: 50px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .item-card {
+    flex-direction: column;
+  }
+
+  .item-main {
+    flex: 0 0 auto;
+  }
 
   .item-actions {
     width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .item-actions .btn {
+    flex: 1;
+    text-align: center;
   }
 }
 </style>

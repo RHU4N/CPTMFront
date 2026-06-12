@@ -40,6 +40,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/app/inspecao/:id',
+    name: 'inspecao-detail',
+    component: () => import('@/views/InspecaoDetailView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/historico',
+    name: 'historico',
+    component: () => import('@/views/HistoricoView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/admin/usuarios',
     name: 'admin-users',
     component: () => import('@/views/AdminUsersView.vue'),

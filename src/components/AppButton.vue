@@ -1,7 +1,7 @@
 <template>
   <button class="app-button" type="button" @click="$emit('click')">
     <img v-if="icon" class="app-button__icon" :src="icon" :alt="label || 'Ação'" />
-    <span class="app-button__text"><slot /></span>
+    <span class="app-button__text">{{ label }}<slot /></span>
   </button>
 </template>
 

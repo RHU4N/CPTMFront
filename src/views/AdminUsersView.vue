@@ -80,6 +80,7 @@
                   <div class="actions-wrap">
                     <button class="action-btn action-view" @click="router.push({ name: 'usuario-details', params: { id: user.idUsuario } })">Ver</button>
                     <button class="action-btn action-edit" @click="router.push({ name: 'usuario-edit', params: { id: user.idUsuario } })">Editar</button>
+                    <button class="action-btn action-login" @click="openLoginModal(user)">Login</button>
                     <button v-if="user.flAtivo" class="action-btn action-deactivate" :disabled="actionLoading === user.idUsuario" @click="desativar(user)">Desativar</button>
                     <button v-else class="action-btn action-activate" :disabled="actionLoading === user.idUsuario" @click="reativar(user)">Reativar</button>
                   </div>
@@ -106,6 +107,7 @@
             <div class="user-card-actions">
               <button class="action-btn action-view" @click="router.push({ name: 'usuario-details', params: { id: user.idUsuario } })">Ver</button>
               <button class="action-btn action-edit" @click="router.push({ name: 'usuario-edit', params: { id: user.idUsuario } })">Editar</button>
+              <button class="action-btn action-login" @click="openLoginModal(user)">Login</button>
               <button v-if="user.flAtivo" class="action-btn action-deactivate" :disabled="actionLoading === user.idUsuario" @click="desativar(user)">Desativar</button>
               <button v-else class="action-btn action-activate" :disabled="actionLoading === user.idUsuario" @click="reativar(user)">Reativar</button>
             </div>
@@ -118,6 +120,34 @@
       </section>
     </main>
 
+    <!-- Modal trocar login -->
+    <div v-if="loginModal.open" class="modal-backdrop" @click.self="loginModal.open = false">
+      <div class="login-modal">
+        <h3 class="modal-title">Trocar Login</h3>
+        <p class="modal-sub">Usuário: <strong>{{ loginModal.user?.nmUsuario }}</strong></p>
+        <label class="field-stack">
+          <span class="field-label">Login atual</span>
+          <input :value="loginModal.user?.dsLogin" class="input input--readonly" type="text" readonly />
+        </label>
+        <label class="field-stack">
+          <span class="field-label">Novo login</span>
+          <input
+            v-model="loginModal.novoLogin"
+            class="input"
+            type="text"
+            placeholder="Digite o novo login"
+            @keyup.enter="confirmarTrocarLogin"
+          />
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" type="button" @click="loginModal.open = false">Cancelar</button>
+          <button class="btn btn-primary" type="button" :disabled="loginModal.saving || !loginModal.novoLogin.trim()" @click="confirmarTrocarLogin">
+            {{ loginModal.saving ? 'Salvando...' : 'Salvar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <ToastStack />
   </div>
 </template>
@@ -129,7 +159,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import ToastStack from '@/components/ToastStack.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { desativarUsuario, listPerfis, listUsuarios, reativarUsuario } from '@/services/usuarioService'
+import { desativarUsuario, listPerfis, listUsuarios, reativarUsuario, trocarLoginUsuario } from '@/services/usuarioService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -140,6 +170,7 @@ const actionLoading = ref(null)
 const users = ref([])
 const perfis = ref([])
 const filters = reactive({ profile: '', active: '', search: '' })
+const loginModal = reactive({ open: false, user: null, novoLogin: '', saving: false })
 
 const filteredUsers = computed(() => {
   const search = filters.search.trim().toLowerCase()
@@ -191,6 +222,28 @@ async function reativar(user) {
     uiStore.pushToast(error.message || 'Erro ao reativar.', 'error')
   } finally {
     actionLoading.value = null
+  }
+}
+
+function openLoginModal(user) {
+  loginModal.user = user
+  loginModal.novoLogin = ''
+  loginModal.saving = false
+  loginModal.open = true
+}
+
+async function confirmarTrocarLogin() {
+  if (!loginModal.novoLogin.trim() || !loginModal.user) return
+  loginModal.saving = true
+  try {
+    await trocarLoginUsuario(loginModal.user.idUsuario, loginModal.novoLogin.trim())
+    loginModal.user.dsLogin = loginModal.novoLogin.trim()
+    uiStore.pushToast(`Login alterado para "${loginModal.novoLogin.trim()}".`, 'success')
+    loginModal.open = false
+  } catch (error) {
+    uiStore.pushToast(error.response?.data?.mensagem || error.message || 'Erro ao trocar login.', 'error')
+  } finally {
+    loginModal.saving = false
   }
 }
 
@@ -346,6 +399,11 @@ onMounted(loadUsers)
   color: #1565c0;
 }
 
+.action-login {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
 .action-edit {
   background: #f3e5f5;
   color: #6a1b9a;
@@ -370,6 +428,58 @@ onMounted(loadUsers)
   font-size: 0.85rem;
   color: #888;
   text-align: right;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.login-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
+}
+
+.modal-sub {
+  font-size: 0.88rem;
+  color: #666;
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.field-stack {
+  display: grid;
+  gap: 5px;
+}
+
+.input--readonly {
+  background: #f5f5f5;
+  color: #888;
+  cursor: default;
 }
 
 @media (max-width: 980px) {

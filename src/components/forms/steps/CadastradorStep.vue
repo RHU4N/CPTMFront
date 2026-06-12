@@ -22,8 +22,8 @@
 
       <label class="field-stack">
         <span class="field-label">Autor(a) (PF) do Cadastramento</span>
-        <small class="field-help">Inserir o nome completo da pessoa que realizou o cadastramento da informação.</small>
-        <input v-model="form.txAutorPfDoCadastro" class="input" :class="{ 'is-invalid': errors.txAutorPfDoCadastro }" type="text" placeholder="Ex.: Nome e Sobrenome" :disabled="loading" />
+        <small class="field-help">Login do usuário responsável pelo cadastramento. Preenchido automaticamente pelo sistema.</small>
+        <input v-model="form.txAutorPfDoCadastro" class="input input--readonly" :class="{ 'is-invalid': errors.txAutorPfDoCadastro }" type="text" readonly />
         <small v-if="errors.txAutorPfDoCadastro" class="field-error">{{ errors.txAutorPfDoCadastro }}</small>
       </label>
 
@@ -82,4 +82,10 @@ const sessionLabel = computed(() => {
   margin-bottom: 4px;
 }
 .session-hint-icon { font-size: 1rem; }
+
+.input--readonly {
+  background: #f5f5f5;
+  color: #666;
+  cursor: default;
+}
 </style>

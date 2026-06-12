@@ -12,12 +12,6 @@
         <div v-if="carregando" class="loading-state">Carregando dados...</div>
 
         <form v-else class="user-form" @submit.prevent="submit">
-          <div class="login-readonly">
-            <span class="field-label">Login</span>
-            <span class="login-valor">{{ usuario?.dsLogin }}</span>
-            <span class="login-info">O login não pode ser alterado</span>
-          </div>
-
           <div class="form-row">
             <label class="form-field">
               <span class="field-label">Nome Completo *</span>
@@ -110,11 +104,12 @@ async function submit() {
 
   loading.value = true
   try {
-    await updateUsuario(Number(route.params.id), { ...form })
+    const id = Number(route.params.id)
+    await updateUsuario(id, { nmUsuario: form.nmUsuario, dsEmail: form.dsEmail, idPerfil: form.idPerfil })
     uiStore.pushToast('Usuário atualizado com sucesso!', 'success')
     router.push({ name: 'admin-users' })
   } catch (error) {
-    erro.value = error.message || 'Erro ao atualizar usuário.'
+    erro.value = error.response?.data?.mensagem || error.message || 'Erro ao atualizar usuário.'
   } finally {
     loading.value = false
   }
@@ -156,26 +151,6 @@ function logout() {
   gap: 6px;
 }
 
-.login-readonly {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 16px;
-  background: #f5f5f5;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-.login-valor {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #222;
-}
-
-.login-info {
-  font-size: 0.8rem;
-  color: #999;
-}
 
 .erro-msg {
   color: #ea191f;

@@ -25,3 +25,22 @@ dist-ssr
 
 # Test scripts
 pwa_test.mjs
+ss_*.png
+ss_*.jpg
+ss_*.jpeg
+ss_*.webp
+ss_*.avif
+ss_*.gif
+ss_*.svg
+ss_*.bmp
+ss_*.ico
+ss_*.tiff
+ss_*.tif
+ss_*.psd
+ss_*.raw
+ss_*.heic
+ss_*.indd
+*.mjs
+after_*.png
+after_*.jpg
+after_*.jpeg

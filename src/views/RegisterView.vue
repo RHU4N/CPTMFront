@@ -1,166 +1,98 @@
 <template>
-  <div class="login-container">
-    <img :src="logo" class="logo" alt="Logo" />
-
-    <div class="login-box auth-box">
-      <h1 class="auth-title">Crie o usuário inicial para operação.</h1>
-      <p class="auth-subtitle">O backend final usa /api/Auth/register com confirmação de senha e perfil.</p>
-
-      <form class="auth-form" @submit.prevent="submit">
-        <label>
-          <span class="field-label">Nome</span>
-          <input v-model="form.nmUsuario" class="field" type="text" required />
-        </label>
-
-        <label>
-          <span class="field-label">Login</span>
-          <input v-model="form.dsLogin" class="field" type="text" required />
-        </label>
-
-        <label>
-          <span class="field-label">E-mail</span>
-          <input v-model="form.dsEmail" class="field" type="email" />
-        </label>
-
-        <label>
-          <span class="field-label">Senha</span>
-          <input v-model="form.dsSenha" class="field" type="password" required />
-        </label>
-
-        <label>
-          <span class="field-label">Confirmar senha</span>
-          <input v-model="form.dsSenhaConfirm" class="field" type="password" required />
-        </label>
-
-        <label>
-          <span class="field-label">Perfil</span>
-          <select v-model.number="form.idPerfil" class="field">
-            <option :value="1">Administrador</option>
-            <option :value="2">Usuário de Campo</option>
-          </select>
-        </label>
-
-        <button class="submit-btn" type="submit" :disabled="loading">{{ loading ? 'Criando...' : 'Criar conta' }}</button>
-        <RouterLink class="login-link" :to="{ name: 'login' }">Voltar ao login</RouterLink>
-      </form>
-    </div>
-
-    <ToastStack />
+  <div class="info-shell">
+    <header class="info-header">
+      <span class="brand">CPTM</span>
+    </header>
+    <main class="info-main">
+      <div class="info-card">
+        <div class="info-icon">🔐</div>
+        <h1 class="info-title">Acesso restrito</h1>
+        <p class="info-text">
+          O cadastro de novos usuários é realizado exclusivamente pelo
+          <strong>Administrador do sistema</strong>.
+        </p>
+        <p class="info-text">
+          Entre em contato com o administrador para solicitar seu acesso.
+        </p>
+        <RouterLink class="back-btn" :to="{ name: 'login' }">Voltar ao login</RouterLink>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import ToastStack from '@/components/ToastStack.vue'
-import { useAuthStore } from '@/stores/auth'
-import { useUiStore } from '@/stores/ui'
-
-import logo from '/logo.png'
-
-const authStore = useAuthStore()
-const uiStore = useUiStore()
-const router = useRouter()
-const loading = ref(false)
-
-const form = reactive({
-  nmUsuario: '',
-  dsLogin: '',
-  dsEmail: '',
-  dsSenha: '',
-  dsSenhaConfirm: '',
-  idPerfil: 2,
-})
-
-async function submit() {
-  if (form.dsSenha !== form.dsSenhaConfirm) {
-    uiStore.pushToast('As senhas não conferem.', 'error')
-    return
-  }
-
-  loading.value = true
-  try {
-    const session = await authStore.register({ ...form })
-    uiStore.pushToast(session?.token ? 'Conta criada e autenticada com sucesso.' : 'Conta criada com sucesso. Faça login para continuar.', 'success')
-    await router.replace({ name: session?.token ? 'dashboard' : 'login' })
-  } catch (error) {
-    uiStore.pushToast(error.message || 'Falha ao registrar.', 'error')
-  } finally {
-    loading.value = false
-  }
-}
+import { RouterLink } from 'vue-router'
 </script>
 
 <style scoped>
-.login-container {
+.info-shell {
   min-height: 100svh;
+  background: #f5f5f5;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+}
+
+.info-header {
+  background: #ea191f;
+  color: white;
+  padding: 16px 24px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.info-main {
+  flex: 1;
+  display: flex;
   align-items: center;
-  padding: 20px;
-  background: #f5f5f5;
+  justify-content: center;
+  padding: 32px 16px;
 }
 
-.logo {
-  width: var(--brand-logo-size);
-  max-width: 100%;
-  margin-bottom: 30px;
+.info-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
 }
 
-.auth-box {
-  max-width: 400px;
+.info-icon {
+  font-size: 2.5rem;
 }
 
-.auth-title {
+.info-title {
   margin: 0;
   font-size: 1.4rem;
-  line-height: 1.05;
-  color: #333;
-  text-align: center;
+  color: #222;
 }
 
-.auth-subtitle {
+.info-text {
   margin: 0;
-  color: #666;
-  text-align: center;
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.6;
 }
 
-.auth-form {
-  display: grid;
-  gap: 10px;
-}
-
-.field {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 16px;
-}
-
-.submit-btn {
-  padding: 12px;
-  border: none;
+.back-btn {
+  margin-top: 8px;
+  padding: 12px 28px;
   border-radius: 6px;
   background: #ea191f;
   color: white;
   font-weight: bold;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.login-link {
-  text-align: center;
   text-decoration: none;
-  color: #ea191f;
+  font-size: 0.95rem;
+  transition: opacity 0.2s;
 }
 
-@media (min-width: 768px) {
-  .field,
-  .submit-btn {
-    padding: 14px;
-    font-size: 18px;
-  }
+.back-btn:hover {
+  opacity: 0.9;
 }
 </style>

@@ -47,7 +47,7 @@
       :location-mode="locationMode"
       :errors="currentErrors"
       :files="selectedFiles"
-      :loading="busy"
+      :loading="fieldsDisabled"
       @update:locationMode="locationMode = $event"
       @pick-location="applyPickedLocation"
       @update:files="selectedFiles = $event"
@@ -61,7 +61,7 @@
       <div class="wizard-footer-actions">
         <button class="btn btn-ghost" type="button" :disabled="busy || currentStepIndex === 0" @click="previousStep">Voltar</button>
         <button v-if="!isLastStep" class="btn btn-primary" type="button" :disabled="busy" @click="nextStep">Próximo</button>
-        <button v-else class="btn btn-primary" type="submit" :disabled="busy">{{ busy ? 'Salvando...' : 'Salvar inspeção' }}</button>
+        <button v-else-if="!viewOnly" class="btn btn-primary" type="submit" :disabled="busy">{{ busy ? 'Enviando...' : 'Enviar inspeção' }}</button>
       </div>
     </div>
   </form>
@@ -80,6 +80,7 @@ import FotosStep from '@/components/forms/steps/FotosStep.vue'
 import ReviewStep from '@/components/forms/steps/ReviewStep.vue'
 import { createEmptyEfluente } from '@/models/efluente'
 import { loadDomainCatalog } from '@/services/domainService'
+import { serializeFiles, deserializeFiles } from '@/services/offlineQueue'
 
 const authStore = useAuthStore()
 
@@ -100,12 +101,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  initialStep: {
+    type: Number,
+    default: 0,
+  },
+  viewOnly: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['save', 'cancel'])
 
 const form = reactive(createEmptyEfluente())
 const selectedFiles = ref([])
+const serializedFilesCache = ref([])
 const locationMode = ref('manual')
 const currentStepIndex = ref(0)
 const validationRequested = ref(false)
@@ -138,6 +148,7 @@ const domains = ref({
 
 const isEditMode = computed(() => Boolean(props.modelValue?.pkCdMeioAmbienteCptm))
 const busy = computed(() => props.submitting || domainsLoading.value)
+const fieldsDisabled = computed(() => busy.value || props.viewOnly)
 
 const steps = [
   {
@@ -292,7 +303,7 @@ function persistDraft() {
   try {
     localStorage.setItem(
       draftKey.value,
-      JSON.stringify({ form: sanitizePayload(), locationMode: locationMode.value, stepIndex: currentStepIndex.value }),
+      JSON.stringify({ form: sanitizePayload(), locationMode: locationMode.value, stepIndex: currentStepIndex.value, ready: currentStepIndex.value >= steps.length - 1, files: serializedFilesCache.value, savedAt: new Date().toISOString() }),
     )
   } catch {
     // Ignore storage failures.
@@ -321,7 +332,19 @@ function initializeForm(value = null) {
   autosaveReady.value = false
   const isNew = !value?.pkCdMeioAmbienteCptm
   draftKey.value = `cptm.front.efluente.wizard.${value?.pkCdMeioAmbienteCptm || 'new'}`
-  const stored = restoreDraft(draftKey.value)
+  let stored = restoreDraft(draftKey.value)
+
+  // Migra rascunhos criados como "new" que ainda não foram renomeados para UUID.
+  // Ocorre quando o usuário abre "Continuar" num rascunho novo: o formDraft tem UUID,
+  // mas o draft foi gravado sob a chave 'new'. Encontra, migra e apaga a chave antiga.
+  if (!stored && !isNew) {
+    const newKey = 'cptm.front.efluente.wizard.new'
+    const newStored = restoreDraft(newKey)
+    if (newStored?.form?.pkCdMeioAmbienteCptm === value.pkCdMeioAmbienteCptm) {
+      stored = newStored
+      try { localStorage.removeItem(newKey) } catch { /* ignore */ }
+    }
+  }
 
   Object.assign(form, createEmptyEfluente(), value || {})
 
@@ -332,6 +355,10 @@ function initializeForm(value = null) {
   } else {
     locationMode.value = 'manual'
     currentStepIndex.value = 0
+  }
+
+  if (props.initialStep > 0) {
+    currentStepIndex.value = Math.min(props.initialStep, steps.length - 1)
   }
 
   // Tipo de formulário: campo automático conforme Excel (ID 18, Editável: Não)
@@ -350,13 +377,24 @@ function initializeForm(value = null) {
       form.hrHorasDoCadastramento = now.toTimeString().slice(0, 5)
     }
     const session = authStore.session
-    if (session?.nmUsuario) {
-      if (!form.txAutorPfDoCadastro) form.txAutorPfDoCadastro = session.nmUsuario
-      if (!form.txNmResponsavelCadastro) form.txNmResponsavelCadastro = session.nmUsuario
+    if (session) {
+      if (!form.txAutorPfDoCadastro && session.dsLogin) form.txAutorPfDoCadastro = session.dsLogin
+      if (!form.txNmResponsavelCadastro && session.nmUsuario) form.txNmResponsavelCadastro = session.nmUsuario
     }
   }
 
-  selectedFiles.value = []
+  if (stored?.files?.length) {
+    try {
+      serializedFilesCache.value = stored.files
+      selectedFiles.value = deserializeFiles(stored.files)
+    } catch {
+      serializedFilesCache.value = []
+      selectedFiles.value = []
+    }
+  } else {
+    serializedFilesCache.value = []
+    selectedFiles.value = []
+  }
   photosTouched.value = false
   validationRequested.value = false
 
@@ -418,7 +456,15 @@ watch(
 
 watch(
   selectedFiles,
-  (files) => { syncPhotoNames(files); persistDraft() },
+  async (files) => {
+    syncPhotoNames(files)
+    try {
+      serializedFilesCache.value = files.length ? await serializeFiles(files) : []
+    } catch {
+      serializedFilesCache.value = []
+    }
+    persistDraft()
+  },
   { deep: true },
 )
 

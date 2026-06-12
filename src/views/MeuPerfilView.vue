@@ -9,20 +9,22 @@
         <section class="perfil-section">
           <h2 class="section-title">Dados da Conta</h2>
 
+          <div class="info-grid">
+            <div class="info-row">
+              <span class="field-label">Login</span>
+              <span class="info-value">{{ perfil.dsLogin }}</span>
+            </div>
+            <div class="info-row">
+              <span class="field-label">E-mail</span>
+              <span class="info-value">{{ perfil.dsEmail || '—' }}</span>
+            </div>
+            <p class="info-help">Login e e-mail são gerenciados pelo administrador.</p>
+          </div>
+
           <form class="perfil-form" @submit.prevent="salvarPerfil">
             <label>
               <span class="field-label">Nome</span>
               <input v-model="perfil.nmUsuario" type="text" class="field" placeholder="Seu nome" required />
-            </label>
-
-            <label>
-              <span class="field-label">Login</span>
-              <input v-model="perfil.dsNovoLogin" type="text" class="field" placeholder="Seu login de acesso" autocomplete="username" />
-            </label>
-
-            <label>
-              <span class="field-label">E-mail</span>
-              <input v-model="perfil.dsEmail" type="email" class="field" placeholder="seu@email.com" autocomplete="email" />
             </label>
 
             <p v-if="errosPerfil" class="erro-msg">{{ errosPerfil }}</p>
@@ -80,7 +82,7 @@ import { atualizarMeuPerfil, trocarSenha } from '@/services/usuarioService'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const perfil = reactive({ nmUsuario: '', dsEmail: '', dsNovoLogin: '' })
+const perfil = reactive({ nmUsuario: '', dsLogin: '', dsEmail: '' })
 const senha = reactive({ dsSenhaAtual: '', dsNovaSenha: '', dsNovaSenhaConfirm: '' })
 
 const loadingPerfil = ref(false)
@@ -94,8 +96,8 @@ onMounted(() => {
   const s = authStore.session
   if (s) {
     perfil.nmUsuario = s.nmUsuario || ''
+    perfil.dsLogin = s.dsLogin || ''
     perfil.dsEmail = s.dsEmail || ''
-    perfil.dsNovoLogin = s.dsLogin || ''
   }
 })
 
@@ -110,14 +112,10 @@ async function salvarPerfil() {
   try {
     const res = await atualizarMeuPerfil({
       nmUsuario: perfil.nmUsuario.trim(),
-      dsEmail: perfil.dsEmail.trim() || null,
-      dsNovoLogin: perfil.dsNovoLogin.trim() || null,
     })
     authStore.replaceSession({
       ...authStore.session,
       nmUsuario: res.nmUsuario,
-      dsLogin: res.dsLogin,
-      dsEmail: res.dsEmail,
     })
     sucessoPerfil.value = 'Dados atualizados com sucesso!'
   } catch (error) {
@@ -275,5 +273,37 @@ function logout() {
   padding: 10px 14px;
   border-radius: 6px;
   border: 1px solid rgba(26, 122, 60, 0.3);
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-value {
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-help {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #888;
 }
 </style>

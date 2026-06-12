@@ -55,6 +55,11 @@ export async function redefinirSenha(id) {
   return unwrap(response)
 }
 
+export async function trocarLoginUsuario(id, novoLogin) {
+  const response = await api.patch(`/api/TB_USUARIO/${id}/trocar-login`, { novoLogin })
+  return unwrap(response)
+}
+
 export async function listPerfis() {
   const response = await api.get('/api/TB_PERFIL_USUARIO')
   return unwrapCollection(response)

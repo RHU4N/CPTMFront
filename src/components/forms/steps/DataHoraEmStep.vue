@@ -32,7 +32,7 @@
         <label class="field-stack field-stack--full">
           <span class="field-label">Chave Primária - Meio Ambiente</span>
           <small class="field-help">Campo automático — código único do elemento de monitoramento de Meio Ambiente da CPTM.</small>
-          <input v-model="form.pkCdMeioAmbienteCptm" class="input" type="text" placeholder="Preenchido automaticamente" readonly :disabled="loading" />
+          <input :value="form.pkCdMeioAmbienteCptm" class="input input--readonly" type="text" readonly tabindex="-1" />
         </label>
 
         <label class="field-stack">
