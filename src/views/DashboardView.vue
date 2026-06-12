@@ -35,7 +35,9 @@
         <div class="action-grid">
           <AppButton icon="/inspecao.png" label="Nova inspeção" @click="openCreate" />
           <AppButton icon="/historico.png" label="Histórico completo" @click="router.push({ name: 'historico' })" />
-          <AppButton v-if="authStore.isAdmin" icon="/admin.jpg" label="Área admin" @click="router.push({ name: 'admin-users' })" />
+          <AppButton v-if="authStore.isAdmin" icon="/admin.jpg" label="Usuários" @click="router.push({ name: 'admin-users' })" />
+          <AppButton v-if="authStore.isAdmin" icon="/domain.png" label="Domínios" @click="router.push({ name: 'admin-dominios' })" />
+          <AppButton v-if="authStore.isAdmin" icon="/logs.png" label="Logs" @click="router.push({ name: 'admin-logs' })" />
         </div>
       </section>
 

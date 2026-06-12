@@ -43,7 +43,7 @@
           <div class="form-row">
             <label class="form-field">
               <span class="field-label">Senha Temporária *</span>
-              <input v-model="form.dsSenha" type="password" class="input" required placeholder="Mínimo 8 caracteres com letras e números" autocomplete="new-password" />
+              <input v-model="form.dsSenha" type="password" class="input" required placeholder="Mín. 8 chars, maiúscula, minúscula, número e especial" autocomplete="new-password" />
             </label>
 
             <label class="form-field form-field--check">
@@ -79,6 +79,7 @@ import ToastStack from '@/components/ToastStack.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { createUsuario, listPerfis } from '@/services/usuarioService'
+import { validarSenhaMensagem } from '@/services/adminService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -113,13 +114,9 @@ async function submit() {
     return
   }
 
-  if (form.dsSenha.length < 8) {
-    erro.value = 'A senha deve ter no mínimo 8 caracteres.'
-    return
-  }
-
-  if (!/[a-zA-Z]/.test(form.dsSenha) || !/[0-9]/.test(form.dsSenha)) {
-    erro.value = 'A senha deve conter letras e números.'
+  const senhaErro = validarSenhaMensagem(form.dsSenha)
+  if (senhaErro) {
+    erro.value = senhaErro
     return
   }
 

@@ -75,6 +75,18 @@ const routes = [
     component: () => import('@/views/UsuarioEditView.vue'),
     meta: { requiresAuth: true, roles: [1] },
   },
+  {
+    path: '/admin/dominios',
+    name: 'admin-dominios',
+    component: () => import('@/views/AdminDominiosView.vue'),
+    meta: { requiresAuth: true, roles: [1] },
+  },
+  {
+    path: '/admin/logs',
+    name: 'admin-logs',
+    component: () => import('@/views/AdminLogsView.vue'),
+    meta: { requiresAuth: true, roles: [1] },
+  },
 ]
 
 const router = createRouter({

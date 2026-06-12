@@ -1,6 +1,7 @@
 import api from '@/api/api'
 import { normalizeUser } from '@/models/efluente'
 import { dequeueFirst, deserializeFiles, peekQueue } from './offlineQueue'
+import { registrarLogSync } from './adminService'
 
 const CACHE_KEY = 'cptm.front.efluentes.cache.v1'
 
@@ -105,8 +106,17 @@ export async function saveEfluente(payload) {
 export async function flushOfflineQueue(cancelSignal = null, onItemStart = null, onItemSync = null) {
   const results = []
   let queue = peekQueue()
+  const totalInicial = queue.length
+
+  if (totalInicial > 0) {
+    await registrarLogSync('INICIADA', `Iniciando sincronização de ${totalInicial} registro(s)`)
+  }
+
   while (queue.length > 0) {
-    if (cancelSignal?.cancelled) break
+    if (cancelSignal?.cancelled) {
+      await registrarLogSync('CANCELADA', `Sincronização cancelada. ${results.filter((r) => r.status === 'synced').length} enviados, ${results.filter((r) => r.status === 'failed').length} falhas.`)
+      break
+    }
     const item = queue[0]
     onItemStart?.(item.id)
     try {
@@ -122,7 +132,10 @@ export async function flushOfflineQueue(cancelSignal = null, onItemStart = null,
       onItemSync?.(item)
       results.push({ id: item.id, status: 'synced', data: saved })
     } catch (error) {
-      if (isNetworkFailure(error)) break
+      if (isNetworkFailure(error)) {
+        await registrarLogSync('FALHA', `Falha de rede após ${results.filter((r) => r.status === 'synced').length} enviados.`)
+        break
+      }
       dequeueFirst()
       results.push({
         id: item.payload?.pkCdMeioAmbienteCptm || item.id,
@@ -135,6 +148,15 @@ export async function flushOfflineQueue(cancelSignal = null, onItemStart = null,
     }
     queue = peekQueue()
   }
+
+  const synced = results.filter((r) => r.status === 'synced').length
+  const failed = results.filter((r) => r.status === 'failed').length
+
+  if (totalInicial > 0 && !cancelSignal?.cancelled) {
+    const status = failed === 0 ? 'CONCLUIDA' : synced > 0 ? 'CONCLUIDA' : 'FALHA'
+    await registrarLogSync(status, `Sincronização concluída: ${synced} enviados, ${failed} falhas de ${totalInicial} total.`)
+  }
+
   return results
 }
 

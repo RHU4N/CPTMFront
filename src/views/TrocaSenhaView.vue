@@ -31,7 +31,7 @@
               v-model="form.dsNovaSenha"
               type="password"
               class="field"
-              placeholder="Mínimo 8 caracteres com letras e números"
+              placeholder="Mín. 8 chars, maiúscula, minúscula, número e especial"
               required
               autocomplete="new-password"
             />
@@ -69,6 +69,7 @@ import ToastStack from '@/components/ToastStack.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { trocarSenha } from '@/services/usuarioService'
+import { validarSenhaMensagem } from '@/services/adminService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -96,13 +97,9 @@ async function submit() {
     return
   }
 
-  if (form.dsNovaSenha.length < 8) {
-    erro.value = 'A nova senha deve ter no mínimo 8 caracteres.'
-    return
-  }
-
-  if (!/[a-zA-Z]/.test(form.dsNovaSenha) || !/[0-9]/.test(form.dsNovaSenha)) {
-    erro.value = 'A nova senha deve conter letras e números.'
+  const senhaErro = validarSenhaMensagem(form.dsNovaSenha)
+  if (senhaErro) {
+    erro.value = senhaErro
     return
   }
 
