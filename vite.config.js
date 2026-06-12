@@ -9,11 +9,10 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-icon.svg'],
       manifest: {
         name: 'CPTM Front',
         short_name: 'CPTM Front',
-        description: 'Frontend oficial CPTM integrado com a API .NET 8',
+        description: 'Frontend oficial CPTM integrado com a API .NET 9',
         theme_color: '#be1e2d',
         background_color: '#0d1117',
         display: 'standalone',
@@ -36,7 +35,8 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,svg,png,gif,woff2}'],
+        globPatterns: ['**/*.{js,css,html,png,gif,jpg,jpeg,webp,woff2}', '*.svg'],
+        globIgnores: ['pwa-icon.svg'],
         runtimeCaching: [
           {
             urlPattern: /\/api\/.*$/,
