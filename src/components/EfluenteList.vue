@@ -27,6 +27,7 @@
 
             <div class="item-meta">
               <span v-if="item.dtDataDoCadastramento" class="meta-item">{{ formatDate(item.dtDataDoCadastramento) }}{{ item.hrHorasDoCadastramento ? ' ' + item.hrHorasDoCadastramento : '' }}</span>
+              <span v-if="item.txLinhaCptm" class="meta-item">{{ item.txLinhaCptm }}</span>
               <span v-if="item.txViaCptm" class="meta-item">{{ item.txViaCptm }}</span>
               <span v-if="item.txEstacaoCptm" class="meta-item">{{ item.txEstacaoCptm }}</span>
               <span v-if="item.txMunicipio" class="meta-item">{{ item.txMunicipio }}</span>

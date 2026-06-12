@@ -98,6 +98,12 @@
                 <button class="btn btn-primary" type="button" :disabled="efluenteStore.saving" @click="sendDraft(draft)">Enviar</button>
                 <button class="btn btn-danger" type="button" @click="discardDraft(draft)">Excluir</button>
               </template>
+              <!-- ERRO: Visualizar · Reenviar · Excluir -->
+              <template v-else-if="draft._status === 'ERRO'">
+                <button class="btn btn-ghost" type="button" @click="viewDraft(draft)">Visualizar</button>
+                <button class="btn btn-primary" type="button" :disabled="efluenteStore.saving" @click="sendDraft(draft)">Reenviar</button>
+                <button class="btn btn-danger" type="button" @click="discardDraft(draft)">Excluir</button>
+              </template>
             </div>
           </article>
         </div>
@@ -110,7 +116,7 @@
         :selected-id="selectedId"
         :is-admin="authStore.isAdmin"
         title="Inspeções recentes"
-        subtitle="Últimas 10 inspeções sincronizadas com o servidor."
+        subtitle="Inspeções sincronizadas com o servidor."
         @new="openCreate"
         @select="selectItem"
         @edit="openEdit"

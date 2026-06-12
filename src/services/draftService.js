@@ -32,7 +32,7 @@ export function listDrafts() {
     const form = data.form
     drafts.push({
       _draftKey: key,
-      _status: data.ready ? STATUS.PRONTO : STATUS.RASCUNHO,
+      _status: data.failed ? STATUS.ERRO : (data.ready ? STATUS.PRONTO : STATUS.RASCUNHO),
       _stepIndex: data.stepIndex ?? 0,
       pkCdMeioAmbienteCptm: form.pkCdMeioAmbienteCptm || key,
       txNmElementoMonitoramento: form.txNmElementoMonitoramento || '',

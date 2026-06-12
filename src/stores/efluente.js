@@ -151,7 +151,24 @@ export const useEfluenteStore = defineStore('efluente', {
             }]
           },
         )
-        const failed = results.filter((r) => r.status === 'failed').map((r) => String(r.id))
+        const failedResults = results.filter((r) => r.status === 'failed')
+        // Save failed items back to localStorage so they remain visible as ERRO drafts
+        for (const r of failedResults) {
+          const pid = r.payload?.pkCdMeioAmbienteCptm
+          if (pid) {
+            try {
+              localStorage.setItem(`cptm.front.efluente.wizard.${pid}`, JSON.stringify({
+                form: r.payload,
+                files: r.files || [],
+                stepIndex: 7,
+                ready: true,
+                failed: true,
+                failError: r.error,
+              }))
+            } catch { /* ignore */ }
+          }
+        }
+        const failed = failedResults.map((r) => String(r.id))
         this.failedIds = [...new Set([...this.failedIds, ...failed])]
         const synced = results.filter((r) => r.status === 'synced').length
         if (synced > 0) await this.loadItems()

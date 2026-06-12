@@ -190,13 +190,19 @@ const photos = ref([])
 const source = computed(() => route.query.source || 'server')
 
 const itemStatus = computed(() => {
-  if (source.value === 'draft') return item.value?._ready ? STATUS.PRONTO : STATUS.RASCUNHO
+  if (source.value === 'draft') {
+    if (item.value?._failed) return STATUS.ERRO
+    return item.value?._ready ? STATUS.PRONTO : STATUS.RASCUNHO
+  }
   if (source.value === 'queue') return STATUS.AGUARDANDO
   return STATUS.SINCRONIZADO
 })
 
 const sourceLabel = computed(() => {
-  if (source.value === 'draft') return 'Rascunho local'
+  if (source.value === 'draft') {
+    if (item.value?._failed) return 'Erro ao sincronizar'
+    return 'Rascunho local'
+  }
   if (source.value === 'queue') return 'Aguardando sincronização'
   return 'Sincronizado'
 })
@@ -232,7 +238,7 @@ async function load() {
     if (source.value === 'draft') {
       const data = getDraftById(id)
       if (data?.form) {
-        item.value = { ...createEmptyEfluente(), ...data.form, _ready: !!data.ready }
+        item.value = { ...createEmptyEfluente(), ...data.form, _ready: !!data.ready, _failed: !!data.failed }
         photos.value = (data.files || [])
           .filter((f) => f.type?.startsWith('image/'))
           .map((f) => ({ name: f.name, previewUrl: f.dataUrl }))

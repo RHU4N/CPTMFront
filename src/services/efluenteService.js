@@ -124,7 +124,14 @@ export async function flushOfflineQueue(cancelSignal = null, onItemStart = null,
     } catch (error) {
       if (isNetworkFailure(error)) break
       dequeueFirst()
-      results.push({ id: item.id, status: 'failed', error: error.message })
+      results.push({
+        id: item.payload?.pkCdMeioAmbienteCptm || item.id,
+        queueId: item.id,
+        payload: item.payload,
+        files: item.files,
+        status: 'failed',
+        error: error.message,
+      })
     }
     queue = peekQueue()
   }
