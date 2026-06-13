@@ -41,7 +41,7 @@
           <div class="review-row"><dt>PF autor do cadastro</dt><dd>{{ val(form.txAutorPfDoCadastro) }}</dd></div>
           <div class="review-row"><dt>Nome responsável técnico</dt><dd>{{ val(form.txNmResponsavelCadastro) }}</dd></div>
           <div class="review-row"><dt>Registro profissional (RP)</dt><dd>{{ val(form.txRpResponsavelCadastro) }}</dd></div>
-          <div class="review-row"><dt>DRT</dt><dd>{{ val(form.txDrtResponsavelCadastro) }}</dd></div>
+          <div class="review-row"><dt>Doc. de Responsabilidade Técnica (DRT)</dt><dd>{{ val(form.txDrtResponsavelCadastro) }}</dd></div>
         </dl>
       </div>
 
@@ -152,7 +152,7 @@
     <div class="helper-box helper-box--compact review-confirm-box">
       <div>
         <strong>Tudo certo?</strong>
-        <p>Clique em <strong>Salvar inspeção</strong> para registrar. Os dados serão enviados ao Oracle e as fotos carregadas via multipart.</p>
+        <p>Clique em <strong>Enviar inspeção</strong> para registrar. As fotos serão enviadas junto com o formulário.</p>
       </div>
     </div>
   </section>

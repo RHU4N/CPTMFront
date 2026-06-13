@@ -6,22 +6,30 @@
       <img :src="logo" class="logo" alt="Logo" />
 
       <div class="login-box">
+        <label class="login-label" for="ds-login">Usuário</label>
         <input
+          id="ds-login"
           v-model="form.dsLogin"
           type="text"
-          placeholder="Usuário"
+          placeholder="Digite seu usuário"
           autocomplete="username"
           @keyup.enter="focusPassword"
+          @input="errorMsg = ''"
         />
 
+        <label class="login-label" for="ds-senha">Senha</label>
         <input
+          id="ds-senha"
           ref="passwordInput"
           v-model="form.dsSenha"
           type="password"
-          placeholder="Senha"
+          placeholder="Digite sua senha"
           autocomplete="current-password"
           @keyup.enter="submit"
+          @input="errorMsg = ''"
         />
+
+        <p v-if="errorMsg" class="login-error" role="alert">{{ errorMsg }}</p>
 
         <button type="button" :disabled="loading" @click="submit">
           {{ loading ? 'Entrando...' : 'Entrar' }}
@@ -45,6 +53,7 @@ const route = useRoute()
 
 const initializing = ref(true)
 const loading = ref(false)
+const errorMsg = ref('')
 const passwordInput = ref(null)
 const form = reactive({ dsLogin: '', dsSenha: '' })
 
@@ -67,8 +76,9 @@ function focusPassword() {
 }
 
 async function submit() {
+  errorMsg.value = ''
   if (!form.dsLogin.trim() || !form.dsSenha.trim()) {
-    alert('Informe usuário e senha')
+    errorMsg.value = 'Informe o usuário e a senha para continuar.'
     return
   }
 
@@ -76,7 +86,6 @@ async function submit() {
   try {
     const session = await authStore.login({ dsLogin: form.dsLogin.trim(), dsSenha: form.dsSenha })
 
-    // Primeiro acesso: obriga troca de senha antes de qualquer outra ação
     if (session?.primeiroAcesso) {
       await router.replace({ name: 'trocar-senha' })
       return
@@ -84,7 +93,7 @@ async function submit() {
 
     await router.replace(route.query.redirect ? String(route.query.redirect) : { name: 'dashboard' })
   } catch (error) {
-    alert(error.message || 'Usuário ou senha incorretos')
+    errorMsg.value = error.message || 'Usuário ou senha incorretos. Tente novamente.'
   } finally {
     loading.value = false
   }
@@ -136,6 +145,24 @@ async function submit() {
 
 .login-box button:hover {
   opacity: 0.9;
+}
+
+.login-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: -4px;
+}
+
+.login-error {
+  margin: 0;
+  padding: 10px 14px;
+  background: #fff0f0;
+  border: 1px solid rgba(234, 25, 31, 0.35);
+  border-radius: 6px;
+  color: #c62828;
+  font-size: 0.88rem;
+  text-align: center;
 }
 
 @media (min-width: 768px) {

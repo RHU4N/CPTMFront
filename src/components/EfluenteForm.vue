@@ -4,7 +4,7 @@
       <div class="wizard-header-copy">
         <span class="eyebrow">CPTM | Inspeção ambiental</span>
         <h2 class="section-title">{{ isEditMode ? 'Atualização operacional do efluente' : 'Nova inspeção operacional de efluente' }}</h2>
-        <p class="section-subtitle">Fluxo de coleta técnica com geolocalização, classificação ambiental, anexos e integração Oracle.</p>
+        <p class="section-subtitle">Coleta completa com geolocalização, classificação ambiental e registro fotográfico.</p>
       </div>
       <div class="wizard-header-actions">
         <button class="btn btn-ghost" type="button" @click="$emit('cancel')">Fechar</button>
@@ -191,7 +191,7 @@ const steps = [
   {
     id: 'fotos',
     shortTitle: 'Fotos',
-    description: 'Até 4 evidências fotográficas com upload multipart para BLOB Oracle (RT_EFLUENTE).',
+    description: 'Até 4 evidências fotográficas do elemento de monitoramento. As imagens são ajustadas para o formato 3×4.',
     component: FotosStep,
   },
   {
@@ -249,13 +249,18 @@ function validateStep(stepId) {
   if (stepId === 'localizacao') {
     errors.txMunicipio = validateRequired(form.txMunicipio, 'Selecione o município.')
     errors.txLinhaCptm = validateRequired(form.txLinhaCptm, 'Selecione a linha CPTM.')
-    errors.txKmPoste = validateRequired(form.txKmPoste, 'Informe o KM/Poste.')
+    const kmPoste = String(form.txKmPoste || '').trim()
+    if (!kmPoste) {
+      errors.txKmPoste = 'Informe o KM/Poste no formato XX/XX (ex.: 51/02).'
+    } else if (!/^\d{2,3}\/\d{2,3}$/.test(kmPoste)) {
+      errors.txKmPoste = 'Formato inválido. Use XX/XX ou XXX/XXX sem espaços (ex.: 51/02 ou 132/015).'
+    }
     const lat = normalizeNullableNumber(form.nrLatGrauDecimalWgs84)
     const lng = normalizeNullableNumber(form.nrLongGrauDecimalWgs84)
     if (lat === null) errors.nrLatGrauDecimalWgs84 = 'Informe a latitude WGS84 ou use GPS/mapa.'
-    else if (lat < -90 || lat > 90) errors.nrLatGrauDecimalWgs84 = 'Latitude fora do intervalo esperado (-90 a 90).'
+    else if (lat < -90 || lat > 90) errors.nrLatGrauDecimalWgs84 = 'Informe uma latitude entre -90 e 90.'
     if (lng === null) errors.nrLongGrauDecimalWgs84 = 'Informe a longitude WGS84 ou use GPS/mapa.'
-    else if (lng < -180 || lng > 180) errors.nrLongGrauDecimalWgs84 = 'Longitude fora do intervalo esperado (-180 a 180).'
+    else if (lng < -180 || lng > 180) errors.nrLongGrauDecimalWgs84 = 'Informe uma longitude entre -180 e 180.'
   }
 
   if (stepId === 'caracterizacao') {

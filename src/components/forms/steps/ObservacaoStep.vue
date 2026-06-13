@@ -10,7 +10,7 @@
 
     <label class="field-stack">
       <span class="field-label">Descreva observações relevantes identificadas durante a inspeção</span>
-      <span class="field-help">Destino Oracle: PT_EFLUENTE.TX_OBSERVACAO.</span>
+      <span class="field-help">Detalhe condições relevantes não contempladas nos campos anteriores.</span>
       <textarea v-model="form.txObservacao" class="textarea" :class="{ 'is-invalid': errors.txObservacao }" rows="7" placeholder="Detalhe condições do local, indícios, risco ambiental, acionamentos e recomendações." :disabled="loading" />
       <small v-if="errors.txObservacao" class="field-error">{{ errors.txObservacao }}</small>
     </label>

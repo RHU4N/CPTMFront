@@ -11,7 +11,7 @@
     <div class="wizard-grid wizard-grid--2">
       <label class="field-stack">
         <span class="field-label">Status do desvio ambiental</span>
-        <span class="field-help">Origem: API domínio status desvio. Destino Oracle: PT_EFLUENTE.ID_STATUS_DESVIO.</span>
+        <span class="field-help">Selecione o status atual do desvio ambiental identificado.</span>
         <select v-model="form.idStatusDesvio" class="select" :class="{ 'is-invalid': errors.idStatusDesvio }" :disabled="loading">
           <option :value="null">Selecione o status</option>
           <option v-for="option in domains.statusDesvio" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -21,7 +21,7 @@
 
       <label class="field-stack">
         <span class="field-label">Status do registro</span>
-        <span class="field-help">Origem: API domínio status registro. Destino Oracle: PT_EFLUENTE.ID_STATUS_REGISTRO.</span>
+        <span class="field-help">Selecione o status atual do registro no ciclo operacional.</span>
         <select v-model="form.idStatusRegistro" class="select" :class="{ 'is-invalid': errors.idStatusRegistro }" :disabled="loading">
           <option :value="null">Selecione o status</option>
           <option v-for="option in domains.statusRegistro" :key="option.value" :value="option.value">{{ option.label }}</option>

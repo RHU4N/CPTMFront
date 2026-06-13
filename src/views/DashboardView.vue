@@ -29,8 +29,8 @@
       <section class="card hero-panel">
         <div class="dashboard-copy">
           <span class="eyebrow">CPTM X FATEC</span>
-          <h1>Central operacional de inspeção ambiental ferroviária.</h1>
-          <p class="section-subtitle">Abra uma nova coleta, acompanhe os efluentes recentes e mantenha o fluxo de campo alinhado ao Oracle.</p>
+          <h1>Central de inspeção ambiental ferroviária.</h1>
+          <p class="section-subtitle">Abra uma nova inspeção, acompanhe os registros recentes e mantenha o fluxo de campo atualizado.</p>
         </div>
         <div class="action-grid">
           <AppButton icon="/inspecao.png" label="Nova inspeção" @click="openCreate" />
@@ -181,7 +181,12 @@ const formDraft = reactive(createEmptyEfluente())
 const formInitialStep = ref(0)
 const formViewOnly = ref(false)
 
-const headerTitle = computed(() => (authStore.isAdmin ? 'Bem-vindo, Admin' : 'Bem-vindo, Inspetor'))
+const headerTitle = computed(() => {
+  const nome = authStore.session?.nmUsuario
+  return authStore.isAdmin
+    ? `Olá, ${nome || 'Administrador'}`
+    : `Olá, ${nome || 'Inspetor'}`
+})
 
 // Combine local wizard drafts + offline queue, sorted by date desc, max 10 per section
 const allDrafts = computed(() => {
@@ -373,7 +378,8 @@ async function saveItem(payload, files) {
 }
 
 async function removeItem(item) {
-  if (!window.confirm(`Excluir a inspeção "${item.pkCdMeioAmbienteCptm}"?`)) return
+  const nome = item.txNmElementoMonitoramento || item.txNrElementoMonitoramento || 'esta inspeção'
+  if (!window.confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return
   try {
     await efluenteStore.removeItem(item.pkCdMeioAmbienteCptm)
     uiStore.pushToast('Inspeção removida.', 'success')

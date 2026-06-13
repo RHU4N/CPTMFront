@@ -34,7 +34,7 @@
       <label class="field-stack">
         <span class="field-label">Número do Formulário</span>
         <small class="field-help">Inserir o número de identificação do formulário. Escolher de 1 a 999.999, sequencial e único com seis dígitos.</small>
-        <input v-model.number="form.nrNumeroDeFormulario" class="input" type="number" min="1" max="999999" placeholder="Ex.: 1 (exibição: Nº 000001)" :disabled="loading" />
+        <input v-model.number="form.nrNumeroDeFormulario" class="input" type="number" min="1" max="999999" step="1" placeholder="Ex.: 1 (exibição: Nº 000001)" :disabled="loading" />
       </label>
 
       <label class="field-stack">

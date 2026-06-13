@@ -19,7 +19,7 @@
       <label class="field-stack">
         <span class="field-label">Nº do Contrato (da Contratada)</span>
         <small class="field-help">Inserir o identificador do contrato da Contratada, se aplicável. Máximo 12 caracteres, sem espaços.</small>
-        <input v-model="form.txNrContratoContratada" class="input" :class="{ 'is-invalid': errors.txNrContratoContratada }" type="text" placeholder="Ex.: AR01234-56" :disabled="loading" />
+        <input v-model="form.txNrContratoContratada" class="input" :class="{ 'is-invalid': errors.txNrContratoContratada }" type="text" placeholder="Ex.: AR01234-56" maxlength="12" :disabled="loading" />
         <small v-if="errors.txNrContratoContratada" class="field-error">{{ errors.txNrContratoContratada }}</small>
       </label>
 

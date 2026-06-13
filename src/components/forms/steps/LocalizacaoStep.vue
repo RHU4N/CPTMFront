@@ -125,8 +125,8 @@
     <div class="location-panel">
       <div class="location-panel-head">
         <div>
-          <span class="field-label">Mapa operacional</span>
-          <p class="location-help">Coordenadas WGS84 decimal degrees. Destino Oracle: NR_LAT_GRAU_DECIMAL_WGS84 / NR_LONG_GRAU_DECIMAL_WGS84.</p>
+          <span class="field-label">Mapa de localização</span>
+          <p class="location-help">Coordenadas em grau decimal (Datum WGS84). Atualizadas automaticamente conforme o modo selecionado acima.</p>
         </div>
         <div class="location-actions">
           <button class="btn btn-secondary" type="button" :disabled="loading" @click="useGps">Usar GPS</button>

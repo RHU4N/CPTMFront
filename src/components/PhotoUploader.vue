@@ -374,28 +374,33 @@ onBeforeUnmount(() => {
 
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 160px));
   gap: 12px;
+  justify-content: start;
 }
 
 .preview-grid--photo {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 160px));
+  justify-content: start;
 }
 
 .preview-card {
   margin: 0;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   position: relative;
   cursor: grab;
+  width: 100%;
 }
 
 .preview-card img {
+  display: block;
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
+  object-position: center;
 }
 
 .preview-order {
