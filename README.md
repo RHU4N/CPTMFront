@@ -1,6 +1,6 @@
 # README — Frontend CPTM PWA
 
-**Autores:** Leonardo Torres, Mauricio Maio, Rhuan Santana, Vitor Bastos
+**Autores:** Leonardo Torres, Mauricio Maia, Rhuan Santana, Vitor Bastos
 
 ---
 
